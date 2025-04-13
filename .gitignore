@@ -1,2 +1,31 @@
 models/shrudaya.Q4_K_M.ggufgit 
 venv/
+
+# Node.js
+node_modules/
+
+# Python
+*.pyc
+*.pyo
+__pycache__/
+venv/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Log files
+*.log
+
+# Build directories
+build/
+dist/
+
+# Environment variables
+.env
