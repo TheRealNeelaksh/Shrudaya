@@ -1,0 +1,31 @@
+streamlit==1.29.0
+google-generativeai==0.3.1
+mediapipe
+opencv-python
+elevenlabs
+python-dotenv
+elevenlabs
+assemblyai
+requests
+pvporcupine
+sounddevice
+numpy
+wheel   
+wave
+pydub
+ffmpeg
+mistralai
+colorama
+sarvamai
+huggingface
+torch==2.4.0
+torchaudio==2.4.0
+tokenizers==0.21.0
+transformers==4.49.0
+huggingface_hub==0.28.1
+moshi==0.2.2
+torchtune==0.4.0
+torchao==0.9.0
+silentcipher @ git+https://github.com/SesameAILabs/silentcipher@master
+triton-windows
+elevenlabs-python.git @ git+https://github.com/elevenlabs/elevenlabs-python.git@main
