@@ -1,0 +1,3 @@
+[submodule "tts/csm/csm"]
+	path = tts/csm/csm
+	url = https://github.com/sesame-ai/csm
