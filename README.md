@@ -1,6 +1,7 @@
 # 🧠 Shrudaya: Voice-Driven AI Friend
 
-(https://cdn.dribbble.com/users/345826/screenshots/1820014/media/e44dde0239810eb9dee133d8e860572f.gif)
+![SHRUDAYA](https://cdn.dribbble.com/userupload/33219605/file/original-3e652baea723121800ca0068452af00e.gif)
+
 
 Shrudaya is a voice-based AI companion that listens, thinks, and speaks — combining speech recognition, LLM reasoning, and voice synthesis in one seamless loop.
 
