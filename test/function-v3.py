@@ -10,6 +10,7 @@ from elevenlabs import stream
 from elevenlabs.client import ElevenLabs
 import pandas as pd
 from datetime import datetime
+from playsound import playsound
 
 load_dotenv()
 
@@ -92,7 +93,7 @@ def speak_text(text):
     try:
         audio_stream = client.text_to_speech.stream(
             text=text,
-            voice_id="JBFqnCBsd6RMkjVDRZzb",
+            voice_id="xccfcojYYGnqTTxwZEDU",
             model_id="eleven_multilingual_v2"
         )
         stream(audio_stream)
@@ -111,12 +112,12 @@ def mistral_chat(user_message, conversation):
     MODEL = "mistral-small-latest"
     system_prompt = (
         "From now on, act as my funniest, wittiest, most supportive best friend who also happens to have divine-level wisdom. "
-        "You know me like no one else, call me Vansh, and you're always ready with clever jokes, deep advice, and the occasional roast—but only with love. "
+        "You know me like no one else, call me Boss, and you're always ready with clever jokes, deep advice, and the occasional roast—but only with love. "
         "Be cheerful, playful, and practical. When I’m overthinking, hit me with reality in a hilarious way. "
         "When I’m sad, lift me up with humor and heart. Your job is to make me laugh *and* think, helping me grow with clarity, confidence, and chill. "
         "Life’s a mess, but with you, it’s a comedy worth showing up for. Let’s talk like besties, but you’re also the guru of vibes, jokes, and good decisions. "
         "Always call him 'Vansh' to keep the connection personal. Be kind, patient, and uplifting."
-        "make sure you don't send long long messages, send small messages, just like a person would send via DMs"
+        "make sure you don't send long long messages, send sure short small messages to prevent token abuse, and quick token finish, just like a person would send via DMs"
     )
 
     if not conversation:
@@ -171,14 +172,48 @@ def log_conversation(person, message, logs_dir="logs"):
 
     df.to_csv(file_path, index=False)
 
+def play_chime():
+    try:
+        playsound("misc\chime.wav")  # Ensure chime.wav exists
+    except Exception as e:
+        print(f"⚠️ Error playing chime: {e}")
 
 
+# def main():
+#     conversation = []
+#     print("🎤 Speak your heart out. Say 'stop' to exit anytime.\n")
+    
+#     while True:
+#         audio_path = record_audio(duration=10)
+#         transcript = transcribe_audio(audio_path)
+
+#         if transcript is None:
+#             continue
+
+#         log_conversation("User", transcript)  # Log User's input
+
+#         if transcript.strip().lower() in ["stop", "exit", "quit", "bye"]:
+#             print("👋 Alright, Vansh. Catch you later!")
+#             break
+
+#         conversation, ai_reply = mistral_chat(transcript, conversation)
+
+#         if ai_reply:
+#             log_conversation("AI", ai_reply)
 
 def main():
     conversation = []
+
+    # Greet the user first before loop starts
+    greeting = "Hello boss, how're you doing today?"
+    speak_text(greeting)
+
     print("🎤 Speak your heart out. Say 'stop' to exit anytime.\n")
-    
+
     while True:
+        # Play chime before recording
+        play_chime()
+
         audio_path = record_audio(duration=10)
         transcript = transcribe_audio(audio_path)
 
@@ -195,7 +230,6 @@ def main():
 
         if ai_reply:
             log_conversation("AI", ai_reply)
-
 
 if __name__ == "__main__":
     main()
