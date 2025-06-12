@@ -1,12 +1,7 @@
-import os
-import sys
-import time
-import wave
 import pyaudio
-from dotenv import load_dotenv
-from sarvamai import SarvamAI
-
-load_dotenv()
+import time
+import sys
+import wave
 
 def record_audio(duration=10, output_file='recorded_audio.wav'):
     FORMAT = pyaudio.paInt16
@@ -16,7 +11,7 @@ def record_audio(duration=10, output_file='recorded_audio.wav'):
 
     p = pyaudio.PyAudio()
 
-    stream = p.open(format=FORMAT,
+    stream_in = p.open(format=FORMAT,
                     channels=CHANNELS,
                     rate=RATE,
                     input=True,
@@ -28,7 +23,7 @@ def record_audio(duration=10, output_file='recorded_audio.wav'):
     elapsed = 0
 
     while elapsed < duration:
-        data = stream.read(CHUNK)
+        data = stream_in.read(CHUNK)
         frames.append(data)
 
         new_elapsed = int(time.time() - start_time)
@@ -40,8 +35,8 @@ def record_audio(duration=10, output_file='recorded_audio.wav'):
 
     print("\n✅ Done recording.")
 
-    stream.stop_stream()
-    stream.close()
+    stream_in.stop_stream()
+    stream_in.close()
     p.terminate()
 
     with wave.open(output_file, 'wb') as wf:
@@ -51,27 +46,3 @@ def record_audio(duration=10, output_file='recorded_audio.wav'):
         wf.writeframes(b''.join(frames))
 
     return output_file
-
-def transcribe_audio(audio_file):
-    api_key = os.getenv("SARVAM_API_KEY")
-    if not api_key:
-        print("⚠️ SARVAM_API_KEY not found in environment variables.")
-        return
-
-    client = SarvamAI(api_subscription_key=api_key)
-    try:
-        response = client.speech_to_text.transcribe(
-            file=open(audio_file, "rb"),
-            model="saarika:v2",
-            language_code="en-IN"  # or other supported code
-        )
-        print("📝 Transcript:", response.transcript)
-    except Exception as e:
-        print(f"❌ Error during transcription: {e}")
-
-def main():
-    audio_path = record_audio(duration=10)
-    transcribe_audio(audio_path)
-
-if __name__ == "__main__":
-    main()

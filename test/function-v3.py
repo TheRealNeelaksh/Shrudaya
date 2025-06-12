@@ -11,6 +11,7 @@ from elevenlabs.client import ElevenLabs
 import pandas as pd
 from datetime import datetime
 from playsound import playsound
+import winsound
 
 load_dotenv()
 
@@ -93,7 +94,7 @@ def speak_text(text):
     try:
         audio_stream = client.text_to_speech.stream(
             text=text,
-            voice_id="xccfcojYYGnqTTxwZEDU",
+            voice_id="FFmp1h1BMl0iVHA0JxrI",
             model_id="eleven_multilingual_v2"
         )
         stream(audio_stream)
@@ -174,7 +175,7 @@ def log_conversation(person, message, logs_dir="logs"):
 
 def play_chime():
     try:
-        playsound("misc\chime.wav")  # Ensure chime.wav exists
+        winsound.PlaySound(r'misc\chime.wav', winsound.SND_FILENAME | winsound.SND_ASYNC)  # Ensure chime.wav exists
     except Exception as e:
         print(f"⚠️ Error playing chime: {e}")
 

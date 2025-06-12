@@ -26,8 +26,8 @@ huggingface_hub==0.28.1
 moshi==0.2.2
 torchtune==0.4.0
 torchao==0.9.0
-silentcipher @ git+https://github.com/SesameAILabs/silentcipher@master
 triton-windows
-elevenlabs-python.git @ git+https://github.com/elevenlabs/elevenlabs-python.git@main
+# elevenlabs-python.git @ git+https://github.com/elevenlabs/elevenlabs-python.git@main
 streamlit
-playchime
+playsound
+PyAudio
