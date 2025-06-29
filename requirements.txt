@@ -31,3 +31,4 @@ triton-windows
 streamlit
 playsound
 PyAudio
+llama-cpp-python

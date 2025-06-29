@@ -90,7 +90,7 @@ def speak_text(text):
         print("⚠️ ELEVENLABS_API_KEY not found.")
         return
 
-    client = ElevenLabs(api_key=api_key)
+    client = ElevenLabs(api_key=api_key) 
     try:
         audio_stream = client.text_to_speech.stream(
             text=text,

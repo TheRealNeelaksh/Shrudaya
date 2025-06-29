@@ -30,7 +30,6 @@ def main():
         if transcript.strip().lower() in ["stop", "exit", "quit", "bye"]:
             print("👋 Alright, Vansh. Catch you later!")
             break
-
         conversation, ai_reply = mistral_chat(transcript, conversation)
 
         if ai_reply:
