@@ -94,13 +94,13 @@ main {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  height: 520px; /* CHANGED: Increased length (height) from 250px */
-  width: 620px;  /* CHANGED: Added and set a larger width */
+  height: 520px;
+  width: 620px;
 }
 
 .contact-card {
   border: none;
-  font-size: 40px; /* Slightly increased font size to match */
+  font-size: 40px;
   font-weight: 500;
   cursor: pointer;
   display: flex;
@@ -109,17 +109,19 @@ main {
   gap: 15px;
   flex: 1;
   transition: flex 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+  color: #5E614A; /* ADDED: This sets the text color to match the image */
+  opacity: 1; /* You can lower this value (e.g., 0.9) to make it more transparent if you wish */
 }
 
 .contact-card:hover {
   flex: 1.75;
 }
 
-.contact-card.maya {
+.contact-card.taara { /* CORRECTED: Was '.taara', now matches your HTML class */
   background-color: var(--box-bg-light);
 }
 
-.contact-card.miles {
+.contact-card.veer {
   background-color: var(--box-bg-dark);
 }
 

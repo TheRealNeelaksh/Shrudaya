@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const screens = [contactScreen, loadingScreen, callScreen];
 
     // Button elements
-    const callMayaBtn = document.getElementById('call-maya');
-    const callMilesBtn = document.getElementById('call-miles');
+    const calltaaraBtn = document.getElementById('call-taara');
+    const callveerBtn = document.getElementById('call-veer');
     const endCallBtn = document.getElementById('end-call-btn');
     const unmuteBtn = document.getElementById('unmute-btn');
 
@@ -88,8 +88,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Event Listeners ---
     
-    callMayaBtn.addEventListener('click', () => startCall('Maya'));
-    callMilesBtn.addEventListener('click', () => startCall('Miles'));
+    calltaaraBtn.addEventListener('click', () => startCall('taara'));
+    callveerBtn.addEventListener('click', () => startCall('veer'));
     endCallBtn.addEventListener('click', endCall);
     unmuteBtn.addEventListener('click', toggleMute);
 
