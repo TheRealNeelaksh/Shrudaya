@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesame Recreation</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <header>
+        <div class="logo">🌱</div>
+        <button class="login-btn">Log in</button>
+    </header>
+
+    <main>
+        <div id="contact-screen" class="screen">
+            <div class="contact-container">
+                <button id="call-maya" class="contact-card maya">
+                    <i class="fa-solid fa-phone"></i> Maya
+                </button>
+                <button id="call-miles" class="contact-card miles">
+                    <i class="fa-solid fa-phone"></i> Miles
+                </button>
+            </div>
+        </div>
+
+        <div id="loading-screen" class="screen">
+            <div class="status-box">
+                <p id="loading-text">Connecting to Maya...</p>
+            </div>
+        </div>
+
+        <div id="call-screen" class="screen">
+            <div class="call-wrapper">
+                <h2 id="call-name">Maya</h2>
+                <p id="call-timer">00:00</p>
+                <p class="by-sesame">by Neelaksh</p>
+                <div class="call-visualizer"></div>
+                <div class="call-controls">
+                    <button id="unmute-btn" class="call-btn unmute">
+                        <i class="fas fa-microphone-slash"></i> Unmute
+                    </button>
+                    <button id="end-call-btn" class="call-btn end-call">
+                        <i class="fas fa-phone-slash"></i> End call
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>By using our services, you agree to Sesame's <a href="#">Terms of Use</a> and <a href="#">Privacy Policy</a>.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

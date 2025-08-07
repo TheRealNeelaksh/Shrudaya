@@ -1,0 +1,214 @@
+:root {
+  --primary-bg: #F9F9F7;
+  --box-bg-light: #DDE2C6;
+  --box-bg-dark: #D1D6B8;
+  --text-color: #4A4A4A;
+  --muted-text: #888;
+  --control-bg: #E9EBE4;
+  --end-call-bg: #F8D7DA;
+  --end-call-text: #B71C1C;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--primary-bg);
+  color: var(--text-color);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+a {
+  color: #666;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Header */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+  width: 100%;
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.login-btn {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Main Content & Screen Handling */
+main {
+  flex-grow: 1;
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.screen {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+  position: absolute;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.screen.active {
+  opacity: 1;
+  position: relative;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+/* Contact Screen */
+.contact-container {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  height: 520px; /* CHANGED: Increased length (height) from 250px */
+  width: 620px;  /* CHANGED: Added and set a larger width */
+}
+
+.contact-card {
+  border: none;
+  font-size: 40px; /* Slightly increased font size to match */
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  flex: 1;
+  transition: flex 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.contact-card:hover {
+  flex: 1.75;
+}
+
+.contact-card.maya {
+  background-color: var(--box-bg-light);
+}
+
+.contact-card.miles {
+  background-color: var(--box-bg-dark);
+}
+
+/* Loading Screen */
+.status-box {
+  background-color: var(--box-bg-light);
+  padding: 80px 60px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Call Screen */
+.call-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+#call-name {
+  font-size: 36px;
+  font-weight: 700;
+}
+
+#call-timer {
+  font-size: 36px;
+  font-weight: 400;
+  margin-top: -5px;
+}
+
+.by-sesame {
+  font-size: 14px;
+  color: var(--muted-text);
+  margin-top: 5px;
+}
+
+.call-visualizer {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background-color: var(--box-bg-light);
+  margin: 40px 0;
+  transform: scale(1);
+  transition: transform 0.1s ease-out;
+}
+
+.call-controls {
+  display: flex;
+  gap: 20px;
+}
+
+.call-btn {
+  padding: 12px 24px;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 0.2s;
+}
+
+.call-btn.unmute {
+  background-color: var(--control-bg);
+}
+
+.call-btn.unmute:hover {
+  background-color: #dcdfd6;
+}
+
+.call-btn.end-call {
+  background-color: var(--end-call-bg);
+  color: var(--end-call-text);
+}
+
+.call-btn.end-call:hover {
+  background-color: #f5c6cb;
+}
+
+/* Footer */
+footer {
+  text-align: center;
+  padding: 30px;
+  font-size: 13px;
+  color: var(--muted-text);
+  width: 100%;
+}
