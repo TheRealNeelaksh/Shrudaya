@@ -4,7 +4,7 @@ load_dotenv()
 from elevenlabs import stream
 from elevenlabs.client import ElevenLabs
 
-def speak_text(text):
+def speak_text_xi(text):
     api_key = os.getenv("ELEVENLABS_API_KEY")
     if not api_key:
         print("⚠️ ELEVENLABS_API_KEY not found.")
@@ -14,7 +14,8 @@ def speak_text(text):
     try:
         audio_stream = client.text_to_speech.stream(
             text=text,
-            voice_id="FFmp1h1BMl0iVHA0JxrI",
+            #voice_id="FFmp1h1BMl0iVHA0JxrI",
+            voice_id="BpjGufoPiobT79j2vtj4",
             model_id="eleven_multilingual_v2"
         )
         stream(audio_stream)

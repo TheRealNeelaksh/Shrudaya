@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sesame Recreation</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Project Shrudaya</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,9 +54,9 @@
     </main>
 
     <footer>
-        <p>By using our services, you agree to Sesame's <a href="#">Terms of Use</a> and <a href="#">Privacy Policy</a>.</p>
+        <p>By using our services, you agree to <a href="#">Terms of Use</a> and <a href="#">Privacy Policy</a>.</p>
     </footer>
 
-    <script src="script.js"></script>
+    <script src="{{ url_for('static', path='script.js') }}"></script>
 </body>
 </html>

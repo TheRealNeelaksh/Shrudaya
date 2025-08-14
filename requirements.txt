@@ -31,4 +31,22 @@ triton-windows
 streamlit
 playsound
 PyAudio
-llama-cpp-python
+# llama-cpp-python
+
+# The web framework.
+fastapi
+
+# The server that runs the FastAPI application.
+uvicorn
+
+# For handling form data (good to have).
+python-multipart
+
+# For rendering the index.html template.
+jinja2 
+
+# The underlying library FastAPI uses for this functionality.
+websockets
+
+#  A popular and effective library for Voice Activity Detection
+silero-vad

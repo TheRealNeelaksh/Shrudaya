@@ -1,10 +1,11 @@
 
-from brain.mistralAPI_brain import mistral_chat   # Brain
-from tts.elevenLabs.xiTTS import speak_text_xi    # TTS
-from logs.logger import log_conversation          # Logger
-from misc.chimePlayer import play_chime           # Chime Notification
-from stt.sarvamSTT import transcribe_audio        # STT
-from recording.recordingAudio import record_audio # Audio Recorder
+from brain.mistralAPI_brain import mistral_chat         # Brain
+from tts.elevenLabs.xiTTS import speak_text_xi          # ElevenLabs TTS
+from tts.sesame.sesameCSM import speak_test_sesame      # Sesame TTS
+from logs.logger import log_conversation                # Logger
+from misc.chimePlayer import play_chime                 # Chime Notification
+from stt.sarvamSTT import transcribe_audio              # STT
+from recording.recordingAudio import record_audio       # Audio Recorder
 
 def main():
     conversation = []
