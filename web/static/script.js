@@ -1,22 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
     // UI Elements
-    const contactScreen = document.getElementById('contact-screen');
-    const loadingScreen = document.getElementById('loading-screen');
-    const callScreen = document.getElementById('call-screen');
-    const notAvailableScreen = document.getElementById('not-available-screen');
+    const allGifs = {
+        listening: document.getElementById('status-listening'),
+        processing: document.getElementById('status-processing'),
+        speaking: document.getElementById('status-speaking'),
+        muted: document.getElementById('status-muted')
+    };
     const callTaaraBtn = document.getElementById('call-taara');
     const callVeerBtn = document.getElementById('call-veer');
     const endCallBtn = document.getElementById('end-call-btn');
     const goBackBtn = document.getElementById('go-back-btn');
-    const transcriptDisplay = document.getElementById('transcript-display');
-    const aiResponseText = document.getElementById('ai-response-text');
-    const statusListening = document.getElementById('status-listening');
-    const statusProcessing = document.getElementById('status-processing');
-    const statusSpeaking = document.getElementById('status-speaking');
-    const callName = document.getElementById('call-name');
-    const callTimer = document.getElementById('call-timer');
-    const loadingText = document.getElementById('loading-text');
-    const callVisualizer = document.querySelector('.call-visualizer');
+    const muteBtn = document.getElementById('mute-btn');
+    const callVisualizer = document.getElementById('call-visualizer');
+    const rippleContainer = document.getElementById('ripple-container');
 
     // State variables
     let socket;
@@ -25,44 +21,57 @@ document.addEventListener('DOMContentLoaded', () => {
     let mediaStream;
     let timerInterval;
     let seconds = 0;
-    
-    // MSE Audio Player State
     let mediaSource;
     let sourceBuffer;
     let audioQueue = [];
     let isAppending = false;
     let audioElement;
-
-    // Turn-taking state
     let isAiSpeaking = false;
-    const allStatusGifs = [statusListening, statusProcessing, statusSpeaking];
+    let isMuted = false;
+    let lastRippleTime = 0;
+    let aiSpeakingAnimationId;
 
     const updateStatusIndicator = (state) => {
-        allStatusGifs.forEach(gif => gif.classList.remove('active'));
-        if (state === 'listening') statusListening.classList.add('active');
-        else if (state === 'processing') statusProcessing.classList.add('active');
-        else if (state === 'speaking') statusSpeaking.classList.add('active');
+        if (isMuted && state !== 'idle') { state = 'muted'; }
+        Object.values(allGifs).forEach(gif => gif.classList.remove('active'));
+        if (allGifs[state]) allGifs[state].classList.add('active');
     };
 
-    const showScreen = (screenToShow) => {
+    const updateMuteButton = () => {
+        if (isMuted) {
+            muteBtn.innerHTML = `<i class="fas fa-microphone"></i> Unmute`;
+            updateStatusIndicator('muted');
+        } else {
+            muteBtn.innerHTML = `<i class="fas fa-microphone-slash"></i> Mute`;
+            updateStatusIndicator(isAiSpeaking ? 'speaking' : 'listening');
+        }
+    };
+
+    const toggleMute = () => {
+        isMuted = !isMuted;
+        updateMuteButton();
+    };
+
+    const showScreen = (screenId) => {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        screenToShow.classList.add('active');
+        document.getElementById(screenId).classList.add('active');
     };
 
     const startCall = async (contact) => {
-        transcriptDisplay.textContent = '';
-        aiResponseText.textContent = '';
-        showScreen(loadingScreen);
-        loadingText.textContent = `Connecting to ${contact}...`;
+        document.getElementById('transcript-display').textContent = '';
+        document.getElementById('ai-response-text').textContent = '';
+        isMuted = false;
+        showScreen('loading-screen');
         try {
             setupAudioPlayback();
             const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             socket = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
             socket.onopen = () => {
                 setupAudioProcessing();
-                callName.textContent = contact;
-                showScreen(callScreen);
+                document.getElementById('call-name').textContent = contact;
+                showScreen('call-screen');
                 startTimer();
+                updateMuteButton();
                 updateStatusIndicator('listening');
             };
             socket.onmessage = handleSocketMessage;
@@ -73,6 +82,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const createRipple = () => {
+        const ripple = document.createElement('div');
+        ripple.className = 'ripple';
+        rippleContainer.appendChild(ripple);
+        ripple.addEventListener('animationend', () => ripple.remove());
+    };
+
+    const aiSpeakingAnimation = () => {
+        const now = Date.now();
+        const pulse = 1 + Math.sin(now / 300) * 0.1; // Gentle 10% pulse
+        callVisualizer.style.transform = `scale(${pulse})`;
+        if (now - lastRippleTime > 400) {
+            createRipple();
+            lastRippleTime = now;
+        }
+        aiSpeakingAnimationId = requestAnimationFrame(aiSpeakingAnimation);
+    };
+
+    const startAiSpeakingAnimation = () => {
+        if (!aiSpeakingAnimationId) { aiSpeakingAnimation(); }
+    };
+
+    const stopAiSpeakingAnimation = () => {
+        if (aiSpeakingAnimationId) {
+            cancelAnimationFrame(aiSpeakingAnimationId);
+            aiSpeakingAnimationId = null;
+            callVisualizer.style.transform = 'scale(1)';
+        }
+    };
+
     const setupAudioProcessing = async () => {
         try {
             mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true } });
@@ -80,13 +119,26 @@ document.addEventListener('DOMContentLoaded', () => {
             await audioContext.audioWorklet.addModule('/static/audio-processor.js');
             workletNode = new AudioWorkletNode(audioContext, 'audio-processor');
             workletNode.port.onmessage = (event) => {
-                if (isAiSpeaking || socket?.readyState !== WebSocket.OPEN) return;
+                if (isMuted || isAiSpeaking || socket?.readyState !== WebSocket.OPEN) return;
+
                 const audioBuffer = event.data;
                 const base64Data = btoa(String.fromCharCode.apply(null, new Uint8Array(audioBuffer)));
                 socket.send(base64Data);
+
                 const floatArray = new Float32Array(audioBuffer);
-                let sum = floatArray.reduce((a, b) => a + Math.abs(b), 0);
-                callVisualizer.style.transform = `scale(${1 + (sum / floatArray.length) * 10})`;
+                const avgVolume = floatArray.reduce((a, b) => a + Math.abs(b), 0) / floatArray.length;
+
+                // CAPPED SCALING: Calculate scale but ensure it doesn't exceed 1.3
+                let scale = 1 + avgVolume * 8;
+                scale = Math.min(scale, 1.3); // Cap the scale at 1.3 (30% growth)
+                callVisualizer.style.transform = `scale(${scale})`;
+
+                // Throttled ripple effect
+                const now = Date.now();
+                if (avgVolume > 0.01 && now - lastRippleTime > 200) {
+                    createRipple();
+                    lastRippleTime = now;
+                }
             };
             const source = audioContext.createMediaStreamSource(mediaStream);
             source.connect(workletNode);
@@ -98,28 +150,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setupAudioPlayback() {
         audioElement = new Audio();
-        // Don't set autoplay here, we will control it manually
+        audioElement.autoplay = true;
         mediaSource = new MediaSource();
         audioElement.src = URL.createObjectURL(mediaSource);
         mediaSource.addEventListener('sourceopen', () => {
-            console.log("MediaSource opened.");
-            const mimeCodec = 'audio/mpeg'; // Use a simpler MIME type for broader compatibility
+            const mimeCodec = 'audio/mpeg';
             if (MediaSource.isTypeSupported(mimeCodec)) {
                 sourceBuffer = mediaSource.addSourceBuffer(mimeCodec);
                 sourceBuffer.addEventListener('updateend', () => {
                     isAppending = false;
                     processAudioQueue();
                 });
-            } else {
-                console.error("MIME type not supported:", mimeCodec);
-            }
+            } else { console.error("MIME type not supported:", mimeCodec); }
         });
     }
 
     function processAudioQueue() {
-        if (isAppending || audioQueue.length === 0 || !sourceBuffer || sourceBuffer.updating) {
-            return;
-        }
+        if (isAppending || audioQueue.length === 0 || !sourceBuffer || sourceBuffer.updating) return;
         isAppending = true;
         const audioChunk = audioQueue.shift();
         sourceBuffer.appendBuffer(audioChunk);
@@ -127,34 +174,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleSocketMessage(event) {
         if (event.data instanceof Blob) {
-            // THE FINAL FIX: Give the audio player a "nudge" to start playing.
-            if (audioElement.paused) {
-                audioElement.play().catch(e => console.error("Audio play failed:", e));
-            }
+            if (audioElement.paused) { audioElement.play().catch(e => console.error("Audio play failed:", e)); }
             const reader = new FileReader();
-            reader.onload = function() {
-                audioQueue.push(reader.result);
-                processAudioQueue();
-            };
+            reader.onload = function () { audioQueue.push(reader.result); processAudioQueue(); };
             reader.readAsArrayBuffer(event.data);
         } else {
             const msg = JSON.parse(event.data);
             if (msg.type === 'user_transcript') {
-                if (transcriptDisplay) transcriptDisplay.textContent = `You: "${msg.data}"`;
-                if (aiResponseText) aiResponseText.textContent = 'Taara: ';
+                document.getElementById('transcript-display').textContent = `You: "${msg.data}"`;
+                document.getElementById('ai-response-text').textContent = 'Taara: ';
                 updateStatusIndicator('processing');
             } else if (msg.type === 'ai_text_chunk') {
-                if (aiResponseText) aiResponseText.textContent += msg.data;
+                document.getElementById('ai-response-text').textContent += msg.data;
             } else if (msg.type === 'tts_start') {
                 isAiSpeaking = true;
                 updateStatusIndicator('speaking');
+                startAiSpeakingAnimation();
             } else if (msg.type === 'tts_end') {
                 isAiSpeaking = false;
                 updateStatusIndicator('listening');
+                stopAiSpeakingAnimation();
             }
         }
     }
-    
+
     const endCall = (reason = 'Call ended.') => {
         console.log(reason);
         clearInterval(timerInterval);
@@ -166,22 +209,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (audioElement && audioElement.src) URL.revokeObjectURL(audioElement.src);
         audioQueue = [];
         isAiSpeaking = false;
-        showScreen(contactScreen);
+        stopAiSpeakingAnimation();
+        showScreen('contact-screen');
         updateStatusIndicator('idle');
     };
 
     const startTimer = () => {
-        callTimer.textContent = '00:00';
+        document.getElementById('call-timer').textContent = '00:00';
         timerInterval = setInterval(() => {
             seconds++;
             const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
             const secs = String(seconds % 60).padStart(2, '0');
-            callTimer.textContent = `${mins}:${secs}`;
+            document.getElementById('call-timer').textContent = `${mins}:${secs}`;
         }, 1000);
     };
 
+    // Event Listeners
     callTaaraBtn.addEventListener('click', () => startCall('Taara'));
-    callVeerBtn.addEventListener('click', () => showScreen(notAvailableScreen));
-    goBackBtn.addEventListener('click', () => showScreen(contactScreen));
+    callVeerBtn.addEventListener('click', () => showScreen('not-available-screen'));
+    goBackBtn.addEventListener('click', () => showScreen('contact-screen'));
     endCallBtn.addEventListener('click', () => endCall());
+    muteBtn.addEventListener('click', toggleMute);
 });

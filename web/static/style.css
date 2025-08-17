@@ -4,6 +4,7 @@
   --box-bg-dark: #D1D6B8;
   --text-color: #4A4A4A;
   --muted-text: #888;
+  --control-bg: #E9EBE4;
   --end-call-bg: #F8D7DA;
   --end-call-text: #B71C1C;
 }
@@ -68,7 +69,6 @@ main {
 .status-indicator {
   height: 40px;
   width: 120px;
-  /* Give it a fixed width to prevent layout shifts */
 }
 
 .status-gif {
@@ -159,12 +159,49 @@ main {
   font-size: 16px;
 }
 
+/* --- ADVANCED LAYOUT FOR THE CALL SCREEN --- */
 .call-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  /* Center content vertically */
   text-align: center;
+  position: relative;
+  /* Positioning context for the visualizer */
+  width: 100%;
+  height: 100%;
+  padding: 2vh 0;
 }
+
+#call-name,
+#call-timer,
+.transcript-container,
+.ai-response,
+.call-controls {
+  position: relative;
+  z-index: 10;
+  /* Ensure all text and controls are ON TOP of the visualizer */
+  width: 100%;
+}
+
+.visualizer-wrapper {
+  position: absolute;
+  /* Take the visualizer out of the layout flow */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* Center it perfectly */
+  width: 180px;
+  height: 180px;
+  z-index: 1;
+  /* Place it BEHIND the text and controls */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* --- END ADVANCED LAYOUT STYLES --- */
 
 #call-name {
   font-size: 36px;
@@ -181,19 +218,51 @@ main {
   min-height: 2.5em;
   font-size: 18px;
   color: var(--muted-text);
-  padding: 10px 20px;
   font-style: italic;
   max-width: 600px;
+  margin: 10px auto;
 }
 
-.call-visualizer {
-  width: 180px;
-  height: 180px;
+#call-visualizer {
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   background-color: var(--box-bg-light);
-  margin: 20px 0;
   transform: scale(1);
   transition: transform 0.1s ease-out;
+  z-index: 2;
+}
+
+#ripple-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.ripple {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid var(--box-bg-dark);
+  animation: ripple-effect 2s ease-out forwards;
+}
+
+@keyframes ripple-effect {
+  from {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+
+  to {
+    transform: scale(3.5);
+    opacity: 0;
+  }
 }
 
 .ai-response {
@@ -207,7 +276,7 @@ main {
 .call-controls {
   display: flex;
   gap: 20px;
-  margin-top: 20px;
+  justify-content: center;
 }
 
 .call-btn {
@@ -220,6 +289,14 @@ main {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.call-btn.mute {
+  background-color: var(--control-bg);
+}
+
+.call-btn.mute:hover {
+  background-color: #dcdfd6;
 }
 
 .call-btn.end-call {
