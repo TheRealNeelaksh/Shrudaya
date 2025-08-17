@@ -34,8 +34,14 @@ SAMPLE_RATE = 16000
 async def get_index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+async def safe_send(websocket: WebSocket, message: dict):
+    try:
+        await websocket.send_text(json.dumps(message))
+    except RuntimeError:
+        logging.warning("WebSocket is closed, cannot send message.")
+
 async def tts_consumer(websocket: WebSocket, text_queue: asyncio.Queue):
-    await safe_send(websocket, json.dumps({"type": "tts_start"}))
+    await safe_send(websocket, {"type": "tts_start"})
     while True:
         try:
             sentence = await text_queue.get()
@@ -49,7 +55,7 @@ async def tts_consumer(websocket: WebSocket, text_queue: asyncio.Queue):
         except Exception as e:
             logging.error(f"Error in TTS consumer: {e}")
             break
-    await safe_send(websocket, json.dumps({"type": "tts_end"}))
+    await safe_send(websocket, {"type": "tts_end"})
 
 async def llm_producer(websocket: WebSocket, transcript: str, conversation_history: list, text_queue: asyncio.Queue):
     full_reply = ""
@@ -59,7 +65,7 @@ async def llm_producer(websocket: WebSocket, transcript: str, conversation_histo
         async for text_chunk in stream_mistral_chat_async(transcript, conversation_history):
             full_reply += text_chunk
             sentence_buffer += text_chunk
-            await safe_send(websocket, json.dumps({"type": "ai_text_chunk", "data": text_chunk}))
+            await safe_send(websocket, {"type": "ai_text_chunk", "data": text_chunk})
             parts = sentence_delimiters.split(sentence_buffer)
             if len(parts) > 1:
                 for i in range(len(parts) - 1):
@@ -71,7 +77,7 @@ async def llm_producer(websocket: WebSocket, transcript: str, conversation_histo
         log_conversation("AI", full_reply)
     except Exception as e:
         logging.error(f"Error in LLM producer: {e}")
-        await text_queue.put("I'm sorry, I seem to be having trouble connecting right now.")
+        await text_queue.put("I'm sorry, I'm having a little trouble connecting right now.")
     finally:
         await text_queue.put(None)
 
@@ -85,7 +91,7 @@ async def _process_audio_chunk(websocket: WebSocket, audio_bytes: bytes, convers
                 wf.writeframes(audio_bytes)
         transcript = await asyncio.to_thread(transcribe_audio, tmp_wav_path)
         if not transcript or not transcript.strip(): return
-        await safe_send(websocket, json.dumps({"type": "user_transcript", "data": transcript}))
+        await safe_send(websocket, {"type": "user_transcript", "data": transcript})
         log_conversation("User", transcript)
         text_queue = asyncio.Queue()
         tts_task = asyncio.create_task(tts_consumer(websocket, text_queue))
@@ -98,18 +104,13 @@ async def _process_audio_chunk(websocket: WebSocket, audio_bytes: bytes, convers
         if tmp_wav_path and os.path.exists(tmp_wav_path):
             os.remove(tmp_wav_path)
 
-async def safe_send(websocket: WebSocket, message: str):
-    try:
-        await websocket.send_text(message)
-    except RuntimeError:
-        logging.warning("WebSocket is closed, cannot send message.")
-
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     logging.info("WebSocket connection established.")
     conversation_history = []
     
+    # Using the 'end-of-speech timer' logic for robust utterance detection
     vad_iterator = VADIterator(model, threshold=0.5)
     
     audio_buffer = torch.empty(0, dtype=torch.float32)
@@ -121,17 +122,19 @@ async def websocket_endpoint(websocket: WebSocket):
         nonlocal is_speaking, speech_audio_buffer
         if not speech_audio_buffer: return
         
+        is_speaking = False
         logging.info("Processing full utterance after pause.")
         full_utterance_tensor = torch.cat(speech_audio_buffer)
-        speech_audio_buffer = []
-        is_speaking = False
+        speech_audio_buffer = [] # Clear buffer for next turn
         
         speech_bytes = (full_utterance_tensor * 32767).to(torch.int16).numpy().tobytes()
         asyncio.create_task(_process_audio_chunk(websocket, speech_bytes, conversation_history))
 
     async def start_end_speech_timer():
-        await asyncio.sleep(2) # 2s pause threshold
-        await process_utterance()
+        # This is the pause duration. 800ms is a good starting point.
+        await asyncio.sleep(0.8) 
+        if is_speaking: # Check if user is still considered speaking
+            await process_utterance()
 
     try:
         while True:
@@ -147,18 +150,23 @@ async def websocket_endpoint(websocket: WebSocket):
                 audio_buffer = audio_buffer[VAD_WINDOW_SIZE:]
                 speech_dict = vad_iterator(current_window, return_seconds=True)
 
+                if is_speaking:
+                    speech_audio_buffer.append(current_window)
+
                 if speech_dict:
                     if 'start' in speech_dict:
                         is_speaking = True
-                        if end_speech_timer:
+                        logging.info("Speech start detected.")
+                        # If user starts speaking again, cancel any pending timer
+                        if end_speech_timer and not end_speech_timer.done():
                             end_speech_timer.cancel()
-                            end_speech_timer = None
                         speech_audio_buffer.append(current_window)
-                    elif 'end' in speech_dict and is_speaking:
+
+                    if 'end' in speech_dict and is_speaking:
+                        # User has paused. Start a timer. If they don't speak again
+                        # soon, we'll process what we have.
                         if not end_speech_timer or end_speech_timer.done():
                            end_speech_timer = asyncio.create_task(start_end_speech_timer())
-                elif is_speaking:
-                    speech_audio_buffer.append(current_window)
                     
     except WebSocketDisconnect:
         logging.info("WebSocket connection closed by client.")

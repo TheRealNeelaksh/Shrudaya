@@ -35,27 +35,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentAiMessageElement = null;
     let aiSpeakingAnimationId;
 
-    const updateStatusIndicator = (state) => {
-        if (isMuted && state !== 'idle') { state = 'muted'; }
-        Object.values(allGifs).forEach(gif => gif.classList.remove('active'));
-        if (allGifs[state]) allGifs[state].classList.add('active');
-    };
-
-    const showScreen = (screenId) => {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(screenId).classList.add('active');
-    };
-
-    const addMessageToChatLog = (sender, text) => {
-        const messageBubble = document.createElement('div');
-        messageBubble.className = `message-bubble ${sender}-message`;
-        messageBubble.textContent = text;
-        chatLog.appendChild(messageBubble);
-        chatLog.scrollTop = chatLog.scrollHeight;
-        return messageBubble;
-    };
-
     const startCall = (contact) => {
+        // --- PASSWORD PROMPT RE-ADDED ---
+        const password = prompt("Please enter the password to connect:");
+        if (!password) {
+            return; // Stop if the user cancels or enters nothing
+        }
+        
         chatLog.innerHTML = '';
         isMuted = false;
         showScreen('loading-screen');
@@ -70,7 +56,10 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 setupAudioPlayback();
                 const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                socket = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
+                // Add the password to the WebSocket URL
+                const wsUrl = `${wsProtocol}//${window.location.host}/ws?password=${encodeURIComponent(password)}`;
+                socket = new WebSocket(wsUrl);
+                
                 socket.onopen = () => {
                     setupAudioProcessing();
                     callName.textContent = contact;
@@ -79,26 +68,51 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateMuteButton();
                     updateStatusIndicator('listening');
                 };
+
                 socket.onmessage = handleSocketMessage;
-                socket.onclose = () => endCall('Connection closed.');
+                
+                socket.onclose = (event) => {
+                    // Check for our specific "authentication failed" code
+                    if (event.code === 4001) {
+                        alert("Authentication failed. Please refresh and try again.");
+                    }
+                    endCall(`Connection closed (code: ${event.code})`);
+                };
+
                 socket.onerror = () => endCall('A connection error occurred.');
             } catch (error) {
                 endCall('Failed to initialize call.');
             }
         }, randomDelay);
     };
-    
-    // Animation loop for when the AI is speaking
+
+    // --- All other functions remain the same ---
+
+    const updateStatusIndicator = (state) => {
+        if (isMuted && state !== 'idle') { state = 'muted'; }
+        Object.values(allGifs).forEach(gif => gif.classList.remove('active'));
+        if (allGifs[state]) allGifs[state].classList.add('active');
+    };
+    const showScreen = (screenId) => {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    };
+    const addMessageToChatLog = (sender, text) => {
+        const messageBubble = document.createElement('div');
+        messageBubble.className = `message-bubble ${sender}-message`;
+        messageBubble.textContent = text;
+        chatLog.appendChild(messageBubble);
+        chatLog.scrollTop = chatLog.scrollHeight;
+        return messageBubble;
+    };
     const aiSpeakingAnimation = () => {
-        const pulse = 1 + Math.sin(Date.now() / 300) * 0.1; // Gentle 10% pulse
+        const pulse = 1 + Math.sin(Date.now() / 300) * 0.1;
         callVisualizer.style.transform = `scale(${pulse})`;
         aiSpeakingAnimationId = requestAnimationFrame(aiSpeakingAnimation);
     };
-
     const startAiSpeakingAnimation = () => {
         if (!aiSpeakingAnimationId) aiSpeakingAnimation();
     };
-
     const stopAiSpeakingAnimation = () => {
         if (aiSpeakingAnimationId) {
             cancelAnimationFrame(aiSpeakingAnimationId);
@@ -106,7 +120,6 @@ document.addEventListener('DOMContentLoaded', () => {
             callVisualizer.style.transform = 'scale(1)';
         }
     };
-    
     const setupAudioProcessing = async () => {
         try {
             mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true } });
@@ -121,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const floatArray = new Float32Array(audioBuffer);
                 const avgVolume = floatArray.reduce((a, b) => a + Math.abs(b), 0) / floatArray.length;
                 let scale = 1 + avgVolume * 8;
-                scale = Math.min(scale, 1.3); // Cap the scale at 30% growth
+                scale = Math.min(scale, 1.3);
                 callVisualizer.style.transform = `scale(${scale})`;
             };
             const source = audioContext.createMediaStreamSource(mediaStream);
@@ -130,7 +143,6 @@ document.addEventListener('DOMContentLoaded', () => {
             endCall("Could not access microphone.");
         }
     };
-
     function setupAudioPlayback() {
         audioElement = new Audio();
         mediaSource = new MediaSource();
@@ -146,14 +158,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
     function processAudioQueue() {
         if (isAppending || audioQueue.length === 0 || !sourceBuffer || sourceBuffer.updating) return;
         isAppending = true;
         const audioChunk = audioQueue.shift();
         sourceBuffer.appendBuffer(audioChunk);
     }
-
     function handleSocketMessage(event) {
         if (event.data instanceof Blob) {
             if (audioElement.paused) { audioElement.play().catch(e => console.error("Audio play failed:", e)); }
@@ -184,7 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-    
     const endCall = (reason = 'Call ended.') => {
         callerTune.pause(); callerTune.currentTime = 0;
         connectionChime.pause(); connectionChime.currentTime = 0;
@@ -195,13 +204,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (audioContext && audioContext.state !== 'closed') audioContext.close();
         if (socket && socket.readyState !== WebSocket.CLOSED) socket.close();
         if (audioElement && audioElement.src) URL.revokeObjectURL(audioElement.src);
-        audioQueue = [];
-        isAiSpeaking = false;
+        audioQueue = [], isAiSpeaking = false;
         stopAiSpeakingAnimation();
         showScreen('contact-screen');
         updateStatusIndicator('idle');
     };
-
     const startTimer = () => {
         callTimer.textContent = '00:00';
         timerInterval = setInterval(() => {
@@ -211,7 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
             callTimer.textContent = `${mins}:${secs}`;
         }, 1000);
     };
-
     const updateMuteButton = () => {
         if (isMuted) {
             muteBtn.innerHTML = `<i class="fas fa-microphone"></i> Unmute`;
@@ -219,7 +225,6 @@ document.addEventListener('DOMContentLoaded', () => {
             muteBtn.innerHTML = `<i class="fas fa-microphone-slash"></i> Mute`;
         }
     };
-    
     const toggleMute = () => {
         isMuted = !isMuted;
         updateMuteButton();
