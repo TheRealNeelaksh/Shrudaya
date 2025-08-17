@@ -4,7 +4,7 @@
 set -o errexit
 
 # # Install Python dependencies
-# pip install -r requirements.txt
+pip install -r requirements.txt
 
 # Run the Uvicorn server
 # The $PORT variable is automatically provided by Render.
