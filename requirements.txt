@@ -17,8 +17,9 @@ mistralai==0.4.2
 # colorama                     # Unused: For terminal text coloring.
 sarvamai
 # huggingface                  # Unused: For running local Hugging Face models.
-torch==2.4.0
-torchaudio==2.4.0
+torch==2.8.0        # 2.4.0
+torchaudio==2.8.0   # 2.4.0
+
 # tokenizers==0.21.0           # Unused: For running local Hugging Face models.
 # transformers==4.49.0         # Unused: For running local Hugging Face models.
 # huggingface_hub==0.28.1      # Unused: For running local Hugging Face models.
