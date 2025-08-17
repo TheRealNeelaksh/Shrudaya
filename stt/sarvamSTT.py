@@ -12,11 +12,12 @@ def transcribe_audio(audio_file):
 
     client = SarvamAI(api_subscription_key=api_key)
     try:
-        response = client.speech_to_text.transcribe(
-            file=open(audio_file, "rb"),
-            model="saarika:v2",
-            language_code="en-IN"
-        )
+        with open(audio_file, "rb") as f:
+            response = client.speech_to_text.transcribe(
+                file=f,
+                model="saarika:v2",
+                language_code="en-IN"
+                )
         transcript = response.transcript
         print("📝 Transcript:", transcript)
         return transcript

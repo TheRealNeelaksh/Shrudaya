@@ -13,7 +13,7 @@ def chat_with_model():
     data = {
         "model": "meta-llama-3-8b-instruct",  # Your model identifier
         "messages": [
-            {"role": "user", "content": "What is the capital of France?"}
+            {"role": "user", "content": "What is the capital of India?"}
         ]
     }
 

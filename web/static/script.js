@@ -1,344 +1,187 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Screen elements
+    // UI Elements
     const contactScreen = document.getElementById('contact-screen');
     const loadingScreen = document.getElementById('loading-screen');
     const callScreen = document.getElementById('call-screen');
-    const screens = [contactScreen, loadingScreen, callScreen];
-
-    // Button elements
-    const calltaaraBtn = document.getElementById('call-taara');
-    const callveerBtn = document.getElementById('call-veer');
+    const notAvailableScreen = document.getElementById('not-available-screen');
+    const callTaaraBtn = document.getElementById('call-taara');
+    const callVeerBtn = document.getElementById('call-veer');
     const endCallBtn = document.getElementById('end-call-btn');
-    const unmuteBtn = document.getElementById('unmute-btn');
-
-    // Dynamic text elements
-    const loadingText = document.getElementById('loading-text');
+    const goBackBtn = document.getElementById('go-back-btn');
+    const transcriptDisplay = document.getElementById('transcript-display');
+    const aiResponseText = document.getElementById('ai-response-text');
+    const statusListening = document.getElementById('status-listening');
+    const statusProcessing = document.getElementById('status-processing');
+    const statusSpeaking = document.getElementById('status-speaking');
     const callName = document.getElementById('call-name');
     const callTimer = document.getElementById('call-timer');
-
-    // State variables
-    let timerInterval;
-    let seconds = 0;
-    let isMuted = true;
-
-    // --- Functions ---
-
-    function showScreen(screenToShow) {
-        // Hide all screens by removing the 'active' class
-        screens.forEach(screen => {
-            screen.classList.remove('active');
-        });
-
-        // Show the target screen by adding the 'active' class
-        screenToShow.classList.add('active');
-    }
-
-    function startCall(contact) {
-        // 1. Show loading screen
-        loadingText.textContent = `Connecting to ${contact}...`;
-        showScreen(loadingScreen);
-
-        // 2. Simulate connection delay (2.5 seconds)
-        setTimeout(() => {
-            // 3. Switch to call screen
-            callName.textContent = contact;
-            showScreen(callScreen);
-            
-            // 4. Start the call timer
-            startTimer();
-        }, 2500);
-    }
-
-    function endCall() {
-        // 1. Stop the timer
-        clearInterval(timerInterval);
-        
-        // 2. Reset timer and state
-        seconds = 0;
-        callTimer.textContent = '00:00';
-        isMuted = true; // Reset mute state
-        updateMuteButton();
-        
-        // 3. Show contact screen
-        showScreen(contactScreen);
-    }
-
-    function startTimer() {
-        timerInterval = setInterval(() => {
-            seconds++;
-            const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
-            const secs = (seconds % 60).toString().padStart(2, '0');
-            callTimer.textContent = `${mins}:${secs}`;
-        }, 1000);
-    }
-
-    function toggleMute() {
-        isMuted = !isMuted;
-        updateMuteButton();
-    }
-
-    function updateMuteButton() {
-        if (isMuted) {
-            unmuteBtn.innerHTML = `<i class="fas fa-microphone-slash"></i> Unmute`;
-        } else {
-            unmuteBtn.innerHTML = `<i class="fas fa-microphone"></i> Mute`;
-        }
-    }
-
-
-    // --- Event Listeners ---
-    
-    calltaaraBtn.addEventListener('click', () => startCall('taara'));
-    callveerBtn.addEventListener('click', () => startCall('veer'));
-    endCallBtn.addEventListener('click', endCall);
-    unmuteBtn.addEventListener('click', toggleMute);
-
-    // --- Initial State ---
-
-    // Initially show the contact screen when the page loads
-    showScreen(contactScreen);
-});
-
-// web/static/script.js
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Screen elements
-    const contactScreen = document.getElementById('contact-screen');
-    const loadingScreen = document.getElementById('loading-screen');
-    const callScreen = document.getElementById('call-screen');
-    const screens = [contactScreen, loadingScreen, callScreen];
-
-    // Button elements
-    const calltaaraBtn = document.getElementById('call-taara');
-    const callveerBtn = document.getElementById('call-veer');
-    const endCallBtn = document.getElementById('end-call-btn');
-    const unmuteBtn = document.getElementById('unmute-btn'); // We'll use this to control mic sending
-
-    // Dynamic text elements
     const loadingText = document.getElementById('loading-text');
-    const callName = document.getElementById('call-name');
-    const callTimer = document.getElementById('call-timer');
     const callVisualizer = document.querySelector('.call-visualizer');
 
-    // --- WebRTC & WebSocket State ---
+    // State variables
     let socket;
     let audioContext;
+    let workletNode;
     let mediaStream;
-    let scriptProcessor;
     let timerInterval;
     let seconds = 0;
-    let isMuted = true; // Start muted
+    
+    // MSE Audio Player State
+    let mediaSource;
+    let sourceBuffer;
     let audioQueue = [];
-    let isPlaying = false;
+    let isAppending = false;
+    let audioElement;
 
-    // --- Functions ---
+    // Turn-taking state
+    let isAiSpeaking = false;
+    const allStatusGifs = [statusListening, statusProcessing, statusSpeaking];
 
-    function showScreen(screenToShow) {
-        screens.forEach(screen => screen.classList.remove('active'));
+    const updateStatusIndicator = (state) => {
+        allStatusGifs.forEach(gif => gif.classList.remove('active'));
+        if (state === 'listening') statusListening.classList.add('active');
+        else if (state === 'processing') statusProcessing.classList.add('active');
+        else if (state === 'speaking') statusSpeaking.classList.add('active');
+    };
+
+    const showScreen = (screenToShow) => {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         screenToShow.classList.add('active');
-    }
+    };
 
-    async function startCall(contact) {
-        loadingText.textContent = `Connecting to ${contact}...`;
+    const startCall = async (contact) => {
+        transcriptDisplay.textContent = '';
+        aiResponseText.textContent = '';
         showScreen(loadingScreen);
-
+        loadingText.textContent = `Connecting to ${contact}...`;
         try {
-            // 1. Initialize WebSocket Connection
+            setupAudioPlayback();
             const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             socket = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
-
             socket.onopen = () => {
-                console.log("WebSocket connection established.");
-                // Now that WS is open, setup audio
                 setupAudioProcessing();
+                callName.textContent = contact;
+                showScreen(callScreen);
+                startTimer();
+                updateStatusIndicator('listening');
             };
-            
-            socket.onclose = () => {
-                console.log("WebSocket connection closed.");
-                endCall(); // Ensure call ends if server disconnects
-            };
-
-            socket.onerror = (error) => {
-                console.error("WebSocket Error:", error);
-                loadingText.textContent = `Connection failed. Please try again.`;
-                setTimeout(() => showScreen(contactScreen), 2000);
-            };
-
-            // 2. Handle messages from server
-            socket.onmessage = (event) => {
-                if (event.data instanceof Blob) {
-                    // It's an audio chunk
-                    audioQueue.push(event.data);
-                    if (!isPlaying) {
-                        playNextAudioChunk();
-                    }
-                } else {
-                    // It's a JSON string with text data
-                    const message = JSON.parse(event.data);
-                    handleTextMessage(message);
-                }
-            };
-
-            // 3. Switch to call screen
-            callName.textContent = contact;
-            showScreen(callScreen);
-            startTimer();
-            // Start unmuted by default when call begins
-            isMuted = false;
-            updateMuteButton();
-
+            socket.onmessage = handleSocketMessage;
+            socket.onclose = () => endCall('Connection closed.');
+            socket.onerror = () => endCall('A connection error occurred.');
         } catch (error) {
-            console.error("Error starting call:", error);
-            loadingText.textContent = `Error: Could not start call.`;
-            setTimeout(() => showScreen(contactScreen), 2000);
+            endCall('Failed to initialize call.');
         }
-    }
-    
-    function setupAudioProcessing() {
-        navigator.mediaDevices.getUserMedia({ audio: {
-            sampleRate: 16000, // Must match server's sample rate
-            channelCount: 1,
-            echoCancellation: true,
-            noiseSuppression: true
-        } })
-        .then(stream => {
-            mediaStream = stream;
-            audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-            const source = audioContext.createMediaStreamSource(stream);
-            
-            // 16384 buffer size for ~1 sec of audio at 16kHz
-            scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
-            
-            scriptProcessor.onaudioprocess = (audioProcessingEvent) => {
-                if (isMuted || socket.readyState !== WebSocket.OPEN) return;
-                
-                // Get the raw PCM audio data
-                const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
+    };
 
-                // Convert to base64 string to send as text
-                const base64Data = btoa(String.fromCharCode.apply(null, new Uint8Array(inputData.buffer)));
+    const setupAudioProcessing = async () => {
+        try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true } });
+            audioContext = new AudioContext({ sampleRate: 16000 });
+            await audioContext.audioWorklet.addModule('/static/audio-processor.js');
+            workletNode = new AudioWorkletNode(audioContext, 'audio-processor');
+            workletNode.port.onmessage = (event) => {
+                if (isAiSpeaking || socket?.readyState !== WebSocket.OPEN) return;
+                const audioBuffer = event.data;
+                const base64Data = btoa(String.fromCharCode.apply(null, new Uint8Array(audioBuffer)));
                 socket.send(base64Data);
-
-                // Visualizer effect
-                let sum = inputData.reduce((a, b) => a + Math.abs(b), 0);
-                let avg = sum / inputData.length;
-                callVisualizer.style.transform = `scale(${1 + avg * 10})`;
+                const floatArray = new Float32Array(audioBuffer);
+                let sum = floatArray.reduce((a, b) => a + Math.abs(b), 0);
+                callVisualizer.style.transform = `scale(${1 + (sum / floatArray.length) * 10})`;
             };
-            
-            source.connect(scriptProcessor);
-            scriptProcessor.connect(audioContext.destination);
-        })
-        .catch(err => {
-            console.error('Error getting media stream:', err);
-            alert('Could not access the microphone. Please grant permission and refresh.');
-            endCall();
+            const source = audioContext.createMediaStreamSource(mediaStream);
+            source.connect(workletNode);
+        } catch (err) {
+            alert("Could not access microphone. Please grant permission and refresh.");
+            endCall("Could not access microphone.");
+        }
+    };
+
+    function setupAudioPlayback() {
+        audioElement = new Audio();
+        // Don't set autoplay here, we will control it manually
+        mediaSource = new MediaSource();
+        audioElement.src = URL.createObjectURL(mediaSource);
+        mediaSource.addEventListener('sourceopen', () => {
+            console.log("MediaSource opened.");
+            const mimeCodec = 'audio/mpeg'; // Use a simpler MIME type for broader compatibility
+            if (MediaSource.isTypeSupported(mimeCodec)) {
+                sourceBuffer = mediaSource.addSourceBuffer(mimeCodec);
+                sourceBuffer.addEventListener('updateend', () => {
+                    isAppending = false;
+                    processAudioQueue();
+                });
+            } else {
+                console.error("MIME type not supported:", mimeCodec);
+            }
         });
     }
 
-    function handleTextMessage(message) {
-        console.log("Received text message:", message);
-        if (message.type === 'user_transcript') {
-            // Maybe display user's transcript on screen? (Optional)
-            console.log("User said:", message.data);
-        } else if (message.type === 'ai_text') {
-            // Display AI's response text (Optional)
-            console.log("AI says:", message.data);
-        } else if (message.type === 'tts_end') {
-            // This can be used to show the AI is "done" talking
-            callVisualizer.style.transform = `scale(1)`;
-        }
-    }
-    
-    async function playNextAudioChunk() {
-        if (audioQueue.length === 0) {
-            isPlaying = false;
-            callVisualizer.style.transform = 'scale(1)'; // Reset visualizer when done
+    function processAudioQueue() {
+        if (isAppending || audioQueue.length === 0 || !sourceBuffer || sourceBuffer.updating) {
             return;
         }
-
-        isPlaying = true;
-        const audioBlob = audioQueue.shift();
-        const arrayBuffer = await audioBlob.arrayBuffer();
-
-        // Decode and play the audio chunk
-        audioContext.decodeAudioData(arrayBuffer, (buffer) => {
-            const source = audioContext.createBufferSource();
-            source.buffer = buffer;
-            source.connect(audioContext.destination);
-            source.start();
-            
-            // Pulse the visualizer as AI speaks
-            callVisualizer.style.transform = 'scale(1.1)';
-            setTimeout(() => { callVisualizer.style.transform = 'scale(1)'; }, 100);
-
-            source.onended = playNextAudioChunk; // Play the next chunk when this one finishes
-        }, (error) => {
-            console.error('Error decoding audio data:', error);
-            playNextAudioChunk(); // Try next chunk even if one fails
-        });
+        isAppending = true;
+        const audioChunk = audioQueue.shift();
+        sourceBuffer.appendBuffer(audioChunk);
     }
 
-    function endCall() {
-        // 1. Stop sending/receiving audio
-        if (scriptProcessor) {
-            scriptProcessor.disconnect();
-            scriptProcessor = null;
+    function handleSocketMessage(event) {
+        if (event.data instanceof Blob) {
+            // THE FINAL FIX: Give the audio player a "nudge" to start playing.
+            if (audioElement.paused) {
+                audioElement.play().catch(e => console.error("Audio play failed:", e));
+            }
+            const reader = new FileReader();
+            reader.onload = function() {
+                audioQueue.push(reader.result);
+                processAudioQueue();
+            };
+            reader.readAsArrayBuffer(event.data);
+        } else {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'user_transcript') {
+                if (transcriptDisplay) transcriptDisplay.textContent = `You: "${msg.data}"`;
+                if (aiResponseText) aiResponseText.textContent = 'Taara: ';
+                updateStatusIndicator('processing');
+            } else if (msg.type === 'ai_text_chunk') {
+                if (aiResponseText) aiResponseText.textContent += msg.data;
+            } else if (msg.type === 'tts_start') {
+                isAiSpeaking = true;
+                updateStatusIndicator('speaking');
+            } else if (msg.type === 'tts_end') {
+                isAiSpeaking = false;
+                updateStatusIndicator('listening');
+            }
         }
-        if (mediaStream) {
-            mediaStream.getTracks().forEach(track => track.stop());
-            mediaStream = null;
-        }
-        if (audioContext) {
-            audioContext.close();
-            audioContext = null;
-        }
-
-        // 2. Close WebSocket
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.close();
-        }
-
-        // 3. Stop and reset UI
+    }
+    
+    const endCall = (reason = 'Call ended.') => {
+        console.log(reason);
         clearInterval(timerInterval);
         seconds = 0;
-        callTimer.textContent = '00:00';
-        isMuted = true;
-        updateMuteButton();
-        showScreen(contactScreen);
-
-        // 4. Clear audio queue
+        if (workletNode) workletNode.port.close();
+        if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
+        if (audioContext && audioContext.state !== 'closed') audioContext.close();
+        if (socket && socket.readyState !== WebSocket.CLOSED) socket.close();
+        if (audioElement && audioElement.src) URL.revokeObjectURL(audioElement.src);
         audioQueue = [];
-        isPlaying = false;
-    }
+        isAiSpeaking = false;
+        showScreen(contactScreen);
+        updateStatusIndicator('idle');
+    };
 
-    function startTimer() {
+    const startTimer = () => {
+        callTimer.textContent = '00:00';
         timerInterval = setInterval(() => {
             seconds++;
-            const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
-            const secs = (seconds % 60).toString().padStart(2, '0');
+            const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+            const secs = String(seconds % 60).padStart(2, '0');
             callTimer.textContent = `${mins}:${secs}`;
         }, 1000);
-    }
+    };
 
-    function toggleMute() {
-        isMuted = !isMuted;
-        updateMuteButton();
-    }
-
-    function updateMuteButton() {
-        if (isMuted) {
-            unmuteBtn.innerHTML = `<i class="fas fa-microphone-slash"></i> Unmute`;
-        } else {
-            unmuteBtn.innerHTML = `<i class="fas fa-microphone"></i> Mute`;
-        }
-    }
-
-    // --- Event Listeners ---
-    calltaaraBtn.addEventListener('click', () => startCall('taara'));
-    callveerBtn.addEventListener('click', () => startCall('veer'));
-    endCallBtn.addEventListener('click', endCall);
-    unmuteBtn.addEventListener('click', toggleMute);
-
-    // --- Initial State ---
-    showScreen(contactScreen);
+    callTaaraBtn.addEventListener('click', () => startCall('Taara'));
+    callVeerBtn.addEventListener('click', () => showScreen(notAvailableScreen));
+    goBackBtn.addEventListener('click', () => showScreen(contactScreen));
+    endCallBtn.addEventListener('click', () => endCall());
 });

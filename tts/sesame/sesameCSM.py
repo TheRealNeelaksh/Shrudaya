@@ -54,5 +54,4 @@ def speak_text_sesame(text):
     except Exception as e:
         print(f"An error occurred: {str(e)}")
 
-# Example of calling the function
-speak_text_sesame("Hi there, it's nice to meet you!")
+

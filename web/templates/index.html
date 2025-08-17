@@ -3,22 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Shrudaya</title>
+    <title>Sesame Recreation</title>
     <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-
     <header>
-        <div class="logo">🌱</div>
+        <div class="header-left">
+            <div class="logo">🌱</div>
+            <div id="status-indicator" class="status-indicator">
+                <img id="status-listening" src="{{ url_for('static', path='assets/press.gif') }}" alt="Listening..." class="status-gif">
+                <img id="status-processing" src="{{ url_for('static', path='assets/notes.gif') }}" alt="Processing..." class="status-gif">
+                <img id="status-speaking" src="{{ url_for('static', path='assets/speak.gif') }}" alt="Speaking..." class="status-gif">
+            </div>
+        </div>
         <button class="login-btn">Log in</button>
     </header>
 
     <main>
-        <div id="contact-screen" class="screen">
+        <div id="contact-screen" class="screen active">
             <div class="contact-container">
                 <button id="call-taara" class="contact-card taara">
                     <i class="fa-solid fa-phone"></i> Taara
@@ -31,31 +35,32 @@
 
         <div id="loading-screen" class="screen">
             <div class="status-box">
-                <p id="loading-text">Connecting to taara...</p>
+                <p id="loading-text">Connecting...</p>
             </div>
         </div>
 
         <div id="call-screen" class="screen">
             <div class="call-wrapper">
-                <h2 id="call-name">taara</h2>
+                <h2 id="call-name">Taara</h2>
                 <p id="call-timer">00:00</p>
-                <p class="by-sesame">by Neelaksh</p>
+                <div id="transcript-display" class="transcript-container"></div>
                 <div class="call-visualizer"></div>
+                <p id="ai-response-text" class="ai-response"></p>
                 <div class="call-controls">
-                    <button id="unmute-btn" class="call-btn unmute">
-                        <i class="fas fa-microphone-slash"></i> Unmute
-                    </button>
                     <button id="end-call-btn" class="call-btn end-call">
                         <i class="fas fa-phone-slash"></i> End call
                     </button>
                 </div>
             </div>
         </div>
-    </main>
 
-    <footer>
-        <p>By using our services, you agree to <a href="#">Terms of Use</a> and <a href="#">Privacy Policy</a>.</p>
-    </footer>
+        <div id="not-available-screen" class="screen">
+            <div class="status-box">
+                <p>Veer has not been set-up yet.</p>
+                <button id="go-back-btn" class="go-back-button">Go Back</button>
+            </div>
+        </div>
+    </main>
 
     <script src="{{ url_for('static', path='script.js') }}"></script>
 </body>

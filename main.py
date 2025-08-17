@@ -31,7 +31,8 @@ def main():
             print("👋 Alright, Vansh. Catch you later!")
             break
         conversation, ai_reply = mistral_chat(transcript, conversation)
-
+        
+        speak_text_xi(ai_reply)
         if ai_reply:
             log_conversation("AI", ai_reply)
 

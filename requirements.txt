@@ -14,7 +14,7 @@ wheel
 wave
 pydub
 ffmpeg
-mistralai
+mistralai==0.4.2
 colorama
 sarvamai
 huggingface
