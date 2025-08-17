@@ -43,3 +43,4 @@ jinja2
 websockets
 # A popular and effective library for Voice Activity Detection
 silero-vad
+pandas
