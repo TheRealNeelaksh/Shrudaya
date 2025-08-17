@@ -1,12 +1,16 @@
 :root {
   --primary-bg: #F9F9F7;
   --box-bg-light: #DDE2C6;
-  --box-bg-dark: #D1D6B8;
   --text-color: #4A4A4A;
   --muted-text: #888;
-  --control-bg: #E9EBE4;
   --end-call-bg: #F8D7DA;
   --end-call-text: #B71C1C;
+  --control-bg: #E9EBE4;
+  --ai-bubble-bg: #ECEFF1;
+  /* Light grey for AI */
+  --user-bubble-bg: #4A4A4A;
+  /* Dark grey for User */
+  --user-bubble-text: #FFFFFF;
 }
 
 * {
@@ -16,7 +20,8 @@
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  /* NEW FONT */
   background-color: var(--primary-bg);
   color: var(--text-color);
   display: flex;
@@ -33,6 +38,7 @@ header {
   width: 100%;
   position: relative;
   z-index: 10;
+  flex-shrink: 0;
 }
 
 .header-left {
@@ -63,7 +69,6 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: -60px;
 }
 
 .status-indicator {
@@ -136,7 +141,7 @@ main {
 }
 
 .contact-card.veer {
-  background-color: var(--box-bg-dark);
+  background-color: #D1D6B8;
 }
 
 .status-box {
@@ -159,49 +164,102 @@ main {
   font-size: 16px;
 }
 
-/* --- ADVANCED LAYOUT FOR THE CALL SCREEN --- */
+/* --- CHAT LAYOUT STYLES --- */
+#call-screen {
+  padding: 0 2vw;
+}
+
+.call-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  max-width: 1400px;
+  gap: 2vw;
+}
+
+.chat-column {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-log {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 20px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* NEW: Custom Scrollbar */
+.chat-log::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-log::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-log::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+.chat-log::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+/* NEW: Message Bubble Animation */
+@keyframes fade-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-bubble {
+  padding: 12px 18px;
+  border-radius: 20px;
+  max-width: 75%;
+  line-height: 1.5;
+  animation: fade-slide-up 0.4s ease-out forwards;
+}
+
+.ai-message {
+  background-color: var(--ai-bubble-bg);
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+
+.user-message {
+  background-color: var(--user-bubble-bg);
+  color: var(--user-bubble-text);
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.info-column {
+  flex-shrink: 0;
+  width: 350px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-left: 1px solid #E0E0E0;
+  padding-left: 2vw;
+}
+
 .call-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  /* Center content vertically */
   text-align: center;
-  position: relative;
-  /* Positioning context for the visualizer */
-  width: 100%;
-  height: 100%;
-  padding: 2vh 0;
 }
-
-#call-name,
-#call-timer,
-.transcript-container,
-.ai-response,
-.call-controls {
-  position: relative;
-  z-index: 10;
-  /* Ensure all text and controls are ON TOP of the visualizer */
-  width: 100%;
-}
-
-.visualizer-wrapper {
-  position: absolute;
-  /* Take the visualizer out of the layout flow */
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  /* Center it perfectly */
-  width: 180px;
-  height: 180px;
-  z-index: 1;
-  /* Place it BEHIND the text and controls */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* --- END ADVANCED LAYOUT STYLES --- */
 
 #call-name {
   font-size: 36px;
@@ -214,13 +272,14 @@ main {
   color: var(--muted-text);
 }
 
-.transcript-container {
-  min-height: 2.5em;
-  font-size: 18px;
-  color: var(--muted-text);
-  font-style: italic;
-  max-width: 600px;
-  margin: 10px auto;
+.visualizer-wrapper {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  margin: 40px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 #call-visualizer {
@@ -230,53 +289,12 @@ main {
   background-color: var(--box-bg-light);
   transform: scale(1);
   transition: transform 0.1s ease-out;
-  z-index: 2;
-}
-
-#ripple-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-}
-
-.ripple {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  border: 2px solid var(--box-bg-dark);
-  animation: ripple-effect 2s ease-out forwards;
-}
-
-@keyframes ripple-effect {
-  from {
-    transform: scale(1);
-    opacity: 0.7;
-  }
-
-  to {
-    transform: scale(3.5);
-    opacity: 0;
-  }
-}
-
-.ai-response {
-  margin: 15px 40px;
-  font-size: 22px;
-  min-height: 50px;
-  line-height: 1.5;
-  max-width: 600px;
 }
 
 .call-controls {
   display: flex;
   gap: 20px;
-  justify-content: center;
+  margin-top: 40px;
 }
 
 .call-btn {
