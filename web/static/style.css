@@ -7,9 +7,7 @@
   --end-call-text: #B71C1C;
   --control-bg: #E9EBE4;
   --ai-bubble-bg: #ECEFF1;
-  /* Light grey for AI */
   --user-bubble-bg: #4A4A4A;
-  /* Dark grey for User */
   --user-bubble-text: #FFFFFF;
 }
 
@@ -21,7 +19,6 @@
 
 body {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  /* NEW FONT */
   background-color: var(--primary-bg);
   color: var(--text-color);
   display: flex;
@@ -164,7 +161,6 @@ main {
   font-size: 16px;
 }
 
-/* --- CHAT LAYOUT STYLES --- */
 #call-screen {
   padding: 0 2vw;
 }
@@ -192,7 +188,6 @@ main {
   gap: 15px;
 }
 
-/* NEW: Custom Scrollbar */
 .chat-log::-webkit-scrollbar {
   width: 8px;
 }
@@ -210,7 +205,6 @@ main {
   background: #aaa;
 }
 
-/* NEW: Message Bubble Animation */
 @keyframes fade-slide-up {
   from {
     opacity: 0;
@@ -272,21 +266,12 @@ main {
   color: var(--muted-text);
 }
 
-.visualizer-wrapper {
-  position: relative;
+#call-visualizer {
   width: 180px;
   height: 180px;
-  margin: 40px 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#call-visualizer {
-  width: 100%;
-  height: 100%;
   border-radius: 50%;
   background-color: var(--box-bg-light);
+  margin: 40px 0;
   transform: scale(1);
   transition: transform 0.1s ease-out;
 }

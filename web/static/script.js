@@ -1,7 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // ==============================================================================
-    // 1. UI ELEMENT SELECTION
-    // ==============================================================================
+    // UI Elements
     const contactScreen = document.getElementById('contact-screen');
     const loadingScreen = document.getElementById('loading-screen');
     const callScreen = document.getElementById('call-screen');
@@ -21,10 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
         speaking: document.getElementById('status-speaking'),
         muted: document.getElementById('status-muted')
     };
+    const callerTune = document.getElementById('caller-tune');
+    const connectionChime = document.getElementById('connection-chime');
 
-    // ==============================================================================
-    // 2. STATE VARIABLES
-    // ==============================================================================
+    // State variables
     let socket;
     let audioContext;
     let workletNode;
@@ -36,10 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let isAiSpeaking = false, isMuted = false;
     let currentAiMessageElement = null;
     let aiSpeakingAnimationId;
-
-    // ==============================================================================
-    // 3. CORE FUNCTIONS
-    // ==============================================================================
 
     const updateStatusIndicator = (state) => {
         if (isMuted && state !== 'idle') { state = 'muted'; }
@@ -61,31 +55,40 @@ document.addEventListener('DOMContentLoaded', () => {
         return messageBubble;
     };
 
-    const startCall = async (contact) => {
+    const startCall = (contact) => {
         chatLog.innerHTML = '';
         isMuted = false;
         showScreen('loading-screen');
-        try {
-            setupAudioPlayback();
-            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            socket = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
-            socket.onopen = () => {
-                setupAudioProcessing();
-                callName.textContent = contact;
-                showScreen('call-screen');
-                startTimer();
-                updateMuteButton();
-                updateStatusIndicator('listening');
-            };
-            socket.onmessage = handleSocketMessage;
-            socket.onclose = () => endCall('Connection closed.');
-            socket.onerror = () => endCall('A connection error occurred.');
-        } catch (error) {
-            endCall('Failed to initialize call.');
-        }
-    };
+        document.getElementById('loading-text').textContent = `Connecting to ${contact}...`;
+        callerTune.play().catch(e => console.error("Caller tune failed to play:", e));
+        const randomDelay = Math.random() * 4000 + 1000;
 
-    // --- Animation Functions ---
+        setTimeout(() => {
+            callerTune.pause();
+            callerTune.currentTime = 0;
+            connectionChime.play().catch(e => console.error("Chime failed to play:", e));
+            try {
+                setupAudioPlayback();
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                socket = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
+                socket.onopen = () => {
+                    setupAudioProcessing();
+                    callName.textContent = contact;
+                    showScreen('call-screen');
+                    startTimer();
+                    updateMuteButton();
+                    updateStatusIndicator('listening');
+                };
+                socket.onmessage = handleSocketMessage;
+                socket.onclose = () => endCall('Connection closed.');
+                socket.onerror = () => endCall('A connection error occurred.');
+            } catch (error) {
+                endCall('Failed to initialize call.');
+            }
+        }, randomDelay);
+    };
+    
+    // Animation loop for when the AI is speaking
     const aiSpeakingAnimation = () => {
         const pulse = 1 + Math.sin(Date.now() / 300) * 0.1; // Gentle 10% pulse
         callVisualizer.style.transform = `scale(${pulse})`;
@@ -100,10 +103,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (aiSpeakingAnimationId) {
             cancelAnimationFrame(aiSpeakingAnimationId);
             aiSpeakingAnimationId = null;
-            callVisualizer.style.transform = 'scale(1)'; // Reset scale
+            callVisualizer.style.transform = 'scale(1)';
         }
     };
-
+    
     const setupAudioProcessing = async () => {
         try {
             mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true } });
@@ -115,10 +118,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const audioBuffer = event.data;
                 const base64Data = btoa(String.fromCharCode.apply(null, new Uint8Array(audioBuffer)));
                 socket.send(base64Data);
-                
                 const floatArray = new Float32Array(audioBuffer);
                 const avgVolume = floatArray.reduce((a, b) => a + Math.abs(b), 0) / floatArray.length;
-                
                 let scale = 1 + avgVolume * 8;
                 scale = Math.min(scale, 1.3); // Cap the scale at 30% growth
                 callVisualizer.style.transform = `scale(${scale})`;
@@ -132,7 +133,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setupAudioPlayback() {
         audioElement = new Audio();
-        audioElement.autoplay = true;
         mediaSource = new MediaSource();
         audioElement.src = URL.createObjectURL(mediaSource);
         mediaSource.addEventListener('sourceopen', () => {
@@ -186,6 +186,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     const endCall = (reason = 'Call ended.') => {
+        callerTune.pause(); callerTune.currentTime = 0;
+        connectionChime.pause(); connectionChime.currentTime = 0;
         clearInterval(timerInterval);
         seconds = 0;
         if (workletNode) workletNode.port.close();
@@ -193,7 +195,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (audioContext && audioContext.state !== 'closed') audioContext.close();
         if (socket && socket.readyState !== WebSocket.CLOSED) socket.close();
         if (audioElement && audioElement.src) URL.revokeObjectURL(audioElement.src);
-        audioQueue = [], isAiSpeaking = false;
+        audioQueue = [];
+        isAiSpeaking = false;
         stopAiSpeakingAnimation();
         showScreen('contact-screen');
         updateStatusIndicator('idle');
@@ -223,9 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateStatusIndicator(isAiSpeaking ? 'speaking' : 'listening');
     };
 
-    // ==============================================================================
-    // 4. EVENT LISTENERS
-    // ==============================================================================
     callTaaraBtn.addEventListener('click', () => startCall('Taara'));
     callVeerBtn.addEventListener('click', () => showScreen('not-available-screen'));
     goBackBtn.addEventListener('click', () => showScreen('contact-screen'));

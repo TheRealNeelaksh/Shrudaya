@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sesame Recreation</title>
+    <title>Sesame AI</title>
     <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
@@ -39,24 +38,20 @@
 
         <div id="loading-screen" class="screen">
             <div class="status-box">
-                <p id="loading-text">Connecting...</p>
+                <p id="loading-text">Connecting to Taara...</p>
             </div>
         </div>
 
         <div id="call-screen" class="screen">
             <div class="call-container">
                 <div class="chat-column">
-                    <div id="chat-log" class="chat-log">
-                        </div>
+                    <div id="chat-log" class="chat-log"></div>
                 </div>
                 <div class="info-column">
                     <div class="call-wrapper">
                         <h2 id="call-name">Taara</h2>
                         <p id="call-timer">00:00</p>
-                        <div class="visualizer-wrapper">
-                            <div id="ripple-container"></div>
-                            <div id="call-visualizer" class="call-visualizer"></div>
-                        </div>
+                        <div id="call-visualizer" class="call-visualizer"></div>
                         <div class="call-controls">
                             <button id="mute-btn" class="call-btn mute">
                                 <i class="fas fa-microphone-slash"></i> Mute
@@ -77,6 +72,9 @@
             </div>
         </div>
     </main>
+
+    <audio id="caller-tune" src="{{ url_for('static', path='assets/callertune.mp3') }}" loop preload="auto"></audio>
+    <audio id="connection-chime" src="{{ url_for('static', path='assets/chime.wav') }}" preload="auto"></audio>
 
     <script src="{{ url_for('static', path='script.js') }}"></script>
 </body>
