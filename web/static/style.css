@@ -23,11 +23,14 @@ body {
   color: var(--text-color);
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  /* Critical for layout */
   overflow: hidden;
+  /* Prevent body scroll */
 }
 
 header {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -35,7 +38,6 @@ header {
   width: 100%;
   position: relative;
   z-index: 10;
-  flex-shrink: 0;
 }
 
 .header-left {
@@ -66,6 +68,7 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 0;
 }
 
 .status-indicator {
@@ -162,7 +165,7 @@ main {
 }
 
 #call-screen {
-  padding: 0 2vw;
+  padding: 2vh 2vw;
 }
 
 .call-container {
@@ -176,12 +179,16 @@ main {
 .chat-column {
   flex-grow: 1;
   display: flex;
+  /* This is key for child flex-grow */
   flex-direction: column;
+  min-width: 0;
 }
 
 .chat-log {
   flex-grow: 1;
+  /* This makes the log take up available space */
   overflow-y: auto;
+  /* This enables scrolling ONLY for this element */
   padding: 20px 10px;
   display: flex;
   flex-direction: column;
@@ -223,6 +230,7 @@ main {
   max-width: 75%;
   line-height: 1.5;
   animation: fade-slide-up 0.4s ease-out forwards;
+  word-wrap: break-word;
 }
 
 .ai-message {

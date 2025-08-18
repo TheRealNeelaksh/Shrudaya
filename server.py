@@ -10,6 +10,9 @@ import tempfile
 import wave
 import os
 import re
+from pathlib import Path
+from typing import List
+from urllib.request import urlretrieve
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.responses import HTMLResponse
@@ -25,20 +28,64 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="web/static"), name="static")
 templates = Jinja2Templates(directory="web/templates")
 logging.basicConfig(level=logging.INFO)
-
-model, utils = torch.hub.load(repo_or_dir='snakers4/silero-vad', model='silero_vad', force_reload=False)
-(get_speech_timestamps, _, _, VADIterator, _) = utils
 SAMPLE_RATE = 16000
+
+# --- VAD MODEL SETUP WITH INTEGRATED DOWNLOAD ---
+
+# 1. Define the local path for the model repository
+VAD_REPO_PATH = Path("vad_model/silero-vad-master")
+
+# 2. Check if the model directory exists, download and unzip if it doesn't
+if not VAD_REPO_PATH.exists():
+    logging.info("VAD model repository not found locally. Downloading...")
+    import zipfile
+    import io
+    
+    # URL to the ZIP file of the repository
+    zip_url = "https://github.com/snakers4/silero-vad/archive/refs/heads/master.zip"
+    
+    try:
+        # Download the zip file into memory
+        response = urlretrieve(zip_url)
+        zip_path = response[0]
+        
+        # Create the parent directory
+        VAD_REPO_PATH.parent.mkdir(exist_ok=True)
+        
+        # Unzip the contents
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(VAD_REPO_PATH.parent)
+        
+        logging.info("VAD model repository downloaded and unzipped successfully.")
+        os.remove(zip_path) # Clean up the downloaded zip file
+        
+    except Exception as e:
+        logging.error(f"FATAL: Failed to download and unzip VAD model. Error: {e}")
+        exit()
+
+# 3. Load the model from the now-guaranteed local path
+try:
+    model, utils = torch.hub.load(
+        repo_or_dir=str(VAD_REPO_PATH),
+        model='silero_vad',
+        source='local',
+        force_reload=True 
+    )
+    (get_speech_timestamps, _, _, VADIterator, _) = utils
+    logging.info("Local PyTorch VAD model loaded successfully.")
+except Exception as e:
+    logging.error(f"FATAL: Could not load local VAD model. Error: {e}")
+    exit()
+
+# --- END VAD MODEL SETUP ---
 
 @app.get("/", response_class=HTMLResponse)
 async def get_index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 async def safe_send(websocket: WebSocket, message: dict):
-    try:
-        await websocket.send_text(json.dumps(message))
-    except RuntimeError:
-        logging.warning("WebSocket is closed, cannot send message.")
+    try: await websocket.send_text(json.dumps(message))
+    except RuntimeError: logging.warning("WebSocket is closed, cannot send message.")
 
 async def tts_consumer(websocket: WebSocket, text_queue: asyncio.Queue):
     await safe_send(websocket, {"type": "tts_start"})
@@ -47,14 +94,11 @@ async def tts_consumer(websocket: WebSocket, text_queue: asyncio.Queue):
             sentence = await text_queue.get()
             if sentence is None: break
             if not sentence.strip(): continue
-            logging.info(f"Streaming TTS for sentence: '{sentence}'")
             async for audio_chunk in stream_tts_audio(sentence):
                 await websocket.send_bytes(audio_chunk)
             text_queue.task_done()
         except RuntimeError: break
-        except Exception as e:
-            logging.error(f"Error in TTS consumer: {e}")
-            break
+        except Exception as e: logging.error(f"Error in TTS consumer: {e}"); break
     await safe_send(websocket, {"type": "tts_end"})
 
 async def llm_producer(websocket: WebSocket, transcript: str, conversation_history: list, text_queue: asyncio.Queue):
@@ -110,7 +154,6 @@ async def websocket_endpoint(websocket: WebSocket):
     logging.info("WebSocket connection established.")
     conversation_history = []
     
-    # Using the 'end-of-speech timer' logic for robust utterance detection
     vad_iterator = VADIterator(model, threshold=0.5)
     
     audio_buffer = torch.empty(0, dtype=torch.float32)
@@ -125,15 +168,14 @@ async def websocket_endpoint(websocket: WebSocket):
         is_speaking = False
         logging.info("Processing full utterance after pause.")
         full_utterance_tensor = torch.cat(speech_audio_buffer)
-        speech_audio_buffer = [] # Clear buffer for next turn
+        speech_audio_buffer = []
         
         speech_bytes = (full_utterance_tensor * 32767).to(torch.int16).numpy().tobytes()
         asyncio.create_task(_process_audio_chunk(websocket, speech_bytes, conversation_history))
 
     async def start_end_speech_timer():
-        # This is the pause duration. 800ms is a good starting point.
-        await asyncio.sleep(0.8) 
-        if is_speaking: # Check if user is still considered speaking
+        await asyncio.sleep(0.8) # Wait for 800ms of silence
+        if is_speaking:
             await process_utterance()
 
     try:
@@ -148,26 +190,27 @@ async def websocket_endpoint(websocket: WebSocket):
             while audio_buffer.shape[0] >= VAD_WINDOW_SIZE:
                 current_window = audio_buffer[:VAD_WINDOW_SIZE]
                 audio_buffer = audio_buffer[VAD_WINDOW_SIZE:]
-                speech_dict = vad_iterator(current_window, return_seconds=True)
-
+                
+                # Always add audio to the buffer if we are in a speaking state
                 if is_speaking:
                     speech_audio_buffer.append(current_window)
+                    
+                speech_dict = vad_iterator(current_window, return_seconds=True)
 
                 if speech_dict:
                     if 'start' in speech_dict:
-                        is_speaking = True
-                        logging.info("Speech start detected.")
-                        # If user starts speaking again, cancel any pending timer
+                        if not is_speaking:
+                            is_speaking = True
+                            speech_audio_buffer = [current_window] # Start new buffer
+                            logging.info("Speech start detected.")
+                        # If user starts talking again, cancel any pending timer
                         if end_speech_timer and not end_speech_timer.done():
                             end_speech_timer.cancel()
-                        speech_audio_buffer.append(current_window)
-
+                    
                     if 'end' in speech_dict and is_speaking:
-                        # User has paused. Start a timer. If they don't speak again
-                        # soon, we'll process what we have.
+                        # User has paused. Start a timer.
                         if not end_speech_timer or end_speech_timer.done():
                            end_speech_timer = asyncio.create_task(start_end_speech_timer())
-                    
     except WebSocketDisconnect:
         logging.info("WebSocket connection closed by client.")
     except Exception as e:

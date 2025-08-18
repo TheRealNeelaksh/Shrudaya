@@ -1,47 +1,25 @@
-# streamlit==1.29.0              # Unused: This project uses FastAPI, not Streamlit.
-# google-generativeai==0.3.1   # Unused: This project uses Mistral AI.
-# mediapipe                    # Unused: Computer vision library.
-# opencv-python                # Unused: Computer vision library.
+# --- Web Framework & Server ---
+fastapi
+uvicorn
+jinja2
+python-multipart
+websockets
+
+# --- AI & Audio Processing ---
+numpy
+torch # Keeping torch as requested
+# REMOVED: torchaudio (very large)
+# ADDED: The lightweight ONNX runtime for the VAD model
+onnxruntime
+silero-vad
+
+# --- API Clients ---
+mistralai==0.4.2
+sarvamai
 elevenlabs
 python-dotenv
-# assemblyai                   # Unused: This project uses Sarvam AI for STT.
-requests
-# pvporcupine                  # Unused: Wake word detection, we use continuous VAD.
-# sounddevice                  # Unused: For playing audio on the server, not streaming to a browser.
-numpy
-wheel   
-# wave                         # Unused: This is a built-in library and the PyPI package is problematic.
-# pydub                        # Unused: Audio manipulation library.
-# ffmpeg                       # Unused: Wrapper for an external program.
-mistralai==0.4.2
-# colorama                     # Unused: For terminal text coloring.
-sarvamai
-# huggingface                  # Unused: For running local Hugging Face models.
-torch==2.8.0        # 2.4.0
-torchaudio==2.8.0   # 2.4.0
 
-# tokenizers==0.21.0           # Unused: For running local Hugging Face models.
-# transformers==4.49.0         # Unused: For running local Hugging Face models.
-# huggingface_hub==0.28.1      # Unused: For running local Hugging Face models.
-# moshi==0.2.2                 # Unused: Advanced PyTorch library.
-# torchtune==0.4.0             # Unused: Advanced PyTorch library.
-# torchao==0.9.0               # Unused: Advanced PyTorch library.
-# triton-windows
-# elevenlabs-python.git @ git+https://github.com/elevenlabs/elevenlabs-python.git@main
-# streamlit                    # Unused: Duplicate entry.
-# playsound                    # Unused: For playing audio on the server.
-# PyAudio                      # Unused: For local audio recording/playback.
-# llama-cpp-python
-# The web framework.
-fastapi
-# The server that runs the FastAPI application.
-uvicorn
-# For handling form data (good to have).
-python-multipart
-# For rendering the index.html template.
-jinja2 
-# The underlying library FastAPI uses for this functionality.
-websockets
-# A popular and effective library for Voice Activity Detection
-silero-vad
+# --- General Utilities ---
+requests
+wheel
 pandas
