@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vaani</title>
+    <title>Sesame AI</title>
     <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -21,31 +19,25 @@
                 <img id="status-muted" src="{{ url_for('static', path='assets/mute.gif') }}" alt="Muted" class="status-gif">
             </div>
         </div>
+        <div id="mode-indicator" class="mode-indicator"></div>
         <button class="login-btn">Log in</button>
     </header>
-
     <main>
         <div id="contact-screen" class="screen active">
             <div class="contact-container">
-                <button id="call-taara" class="contact-card taara">
-                    <i class="fa-solid fa-phone"></i> Taara
-                </button>
-                <button id="call-veer" class="contact-card veer">
-                    <i class="fa-solid fa-phone"></i> Veer
-                </button>
+                <button id="call-taara" class="contact-card taara"><i class="fa-solid fa-phone"></i> Taara</button>
+                <button id="call-veer" class="contact-card veer"><i class="fa-solid fa-phone"></i> Veer</button>
             </div>
         </div>
-
-        <div id="loading-screen" class="screen">
-            <div class="status-box">
-                <p id="loading-text">Connecting to Taara...</p>
-            </div>
-        </div>
-
+        <div id="loading-screen" class="screen"><div class="status-box"><p id="loading-text">Connecting...</p></div></div>
         <div id="call-screen" class="screen">
             <div class="call-container">
                 <div class="chat-column">
                     <div id="chat-log" class="chat-log"></div>
+                    <form id="chat-form" class="chat-form">
+                        <input type="text" id="chat-input" placeholder="Mute the call to type a message..." autocomplete="off">
+                        <button type="submit" id="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                    </form>
                 </div>
                 <div class="info-column">
                     <div class="call-wrapper">
@@ -53,18 +45,13 @@
                         <p id="call-timer">00:00</p>
                         <div id="call-visualizer" class="call-visualizer"></div>
                         <div class="call-controls">
-                            <button id="mute-btn" class="call-btn mute">
-                                <i class="fas fa-microphone-slash"></i> Mute
-                            </button>
-                            <button id="end-call-btn" class="call-btn end-call">
-                                <i class="fas fa-phone-slash"></i> End call
-                            </button>
+                            <button id="mute-btn" class="call-btn mute"><i class="fas fa-microphone-slash"></i> Mute</button>
+                            <button id="end-call-btn" class="call-btn end-call"><i class="fas fa-phone-slash"></i> End call</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
         <div id="not-available-screen" class="screen">
             <div class="status-box">
                 <p>Veer has not been set-up yet.</p>
@@ -72,10 +59,9 @@
             </div>
         </div>
     </main>
-
     <audio id="caller-tune" src="{{ url_for('static', path='assets/callertune.mp3') }}" loop preload="auto"></audio>
     <audio id="connection-chime" src="{{ url_for('static', path='assets/chime.wav') }}" preload="auto"></audio>
-
+    <audio id="typing-sound" src="{{ url_for('static', path='assets/chat.mp3') }}" preload="auto"></audio>
     <script src="{{ url_for('static', path='script.js') }}"></script>
 </body>
 </html>

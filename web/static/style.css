@@ -1,14 +1,18 @@
+/* This is the full, correct CSS file. */
 :root {
-  --primary-bg: #F9F9F7;
-  --box-bg-light: #DDE2C6;
-  --text-color: #4A4A4A;
-  --muted-text: #888;
-  --end-call-bg: #F8D7DA;
-  --end-call-text: #B71C1C;
-  --control-bg: #E9EBE4;
-  --ai-bubble-bg: #ECEFF1;
-  --user-bubble-bg: #4A4A4A;
+  --primary-bg: #fff5d7;
+  --text-color: #4E443A;
+  --header-text-color: #4E443A;
+  --muted-text: #BCAAA4;
+  --accent-color: #ff5e6c;
+  --soft-accent-color: #ffaaab;
+  --container-bg: #F5E9C9;
+  --ai-bubble-bg: #FFFFFF;
+  --user-bubble-bg: #4E443A;
   --user-bubble-text: #FFFFFF;
+  --control-bg: #FFFFFF;
+  --end-call-bg: var(--soft-accent-color);
+  --end-call-text: #4E443A;
 }
 
 * {
@@ -24,9 +28,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  /* Critical for layout */
   overflow: hidden;
-  /* Prevent body scroll */
 }
 
 header {
@@ -36,8 +38,7 @@ header {
   align-items: center;
   padding: 20px 40px;
   width: 100%;
-  position: relative;
-  z-index: 10;
+  border-bottom: 1px solid var(--container-bg);
 }
 
 .header-left {
@@ -49,13 +50,15 @@ header {
 .logo {
   font-size: 28px;
   font-weight: 700;
+  color: var(--header-text-color);
 }
 
 .login-btn {
   padding: 8px 16px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--container-bg);
   border-radius: 8px;
-  background-color: #fff;
+  background-color: transparent;
+  color: var(--text-color);
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
@@ -79,10 +82,26 @@ main {
 .status-gif {
   display: none;
   height: 100%;
+  filter: opacity(75%) saturate(50%);
 }
 
 .status-gif.active {
   display: block;
+}
+
+.mode-indicator {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted-text);
+  padding: 6px 12px;
+  border-radius: 15px;
+  background-color: var(--container-bg);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.mode-indicator.visible {
+  opacity: 1;
 }
 
 .screen {
@@ -113,7 +132,7 @@ main {
   flex-direction: column;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   height: 520px;
   width: 620px;
 }
@@ -129,7 +148,7 @@ main {
   gap: 15px;
   flex: 1;
   transition: flex 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
-  color: #5E614A;
+  color: var(--text-color);
 }
 
 .contact-card:hover {
@@ -137,26 +156,27 @@ main {
 }
 
 .contact-card.taara {
-  background-color: var(--box-bg-light);
+  background-color: var(--soft-accent-color);
 }
 
 .contact-card.veer {
-  background-color: #D1D6B8;
+  background-color: var(--container-bg);
 }
 
 .status-box {
-  background-color: var(--box-bg-light);
+  background-color: var(--container-bg);
+  color: var(--text-color);
   padding: 80px 60px;
   border-radius: 12px;
   text-align: center;
   font-size: 22px;
   font-weight: 500;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .go-back-button {
   background-color: #fff;
   border: 1px solid #ccc;
+  color: var(--text-color);
   padding: 10px 20px;
   border-radius: 8px;
   margin-top: 30px;
@@ -179,16 +199,13 @@ main {
 .chat-column {
   flex-grow: 1;
   display: flex;
-  /* This is key for child flex-grow */
   flex-direction: column;
   min-width: 0;
 }
 
 .chat-log {
   flex-grow: 1;
-  /* This makes the log take up available space */
   overflow-y: auto;
-  /* This enables scrolling ONLY for this element */
   padding: 20px 10px;
   display: flex;
   flex-direction: column;
@@ -204,12 +221,12 @@ main {
 }
 
 .chat-log::-webkit-scrollbar-thumb {
-  background: #ccc;
+  background: var(--container-bg);
   border-radius: 4px;
 }
 
 .chat-log::-webkit-scrollbar-thumb:hover {
-  background: #aaa;
+  background: var(--soft-accent-color);
 }
 
 @keyframes fade-slide-up {
@@ -231,6 +248,7 @@ main {
   line-height: 1.5;
   animation: fade-slide-up 0.4s ease-out forwards;
   word-wrap: break-word;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
 .ai-message {
@@ -246,13 +264,50 @@ main {
   border-bottom-right-radius: 4px;
 }
 
+.chat-form {
+  flex-shrink: 0;
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-top: 1px solid var(--container-bg);
+  transition: opacity 0.3s;
+}
+
+.chat-form.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+#chat-input {
+  flex-grow: 1;
+  border: 1px solid var(--container-bg);
+  background-color: #fff;
+  border-radius: 20px;
+  padding: 10px 15px;
+  font-size: 16px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  outline: none;
+}
+
+#send-btn {
+  flex-shrink: 0;
+  background-color: var(--user-bubble-bg);
+  color: var(--user-bubble-text);
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  font-size: 18px;
+  cursor: pointer;
+}
+
 .info-column {
   flex-shrink: 0;
   width: 350px;
   display: flex;
   justify-content: center;
   align-items: center;
-  border-left: 1px solid #E0E0E0;
+  border-left: 1px solid var(--container-bg);
   padding-left: 2vw;
 }
 
@@ -266,6 +321,7 @@ main {
 #call-name {
   font-size: 36px;
   font-weight: 700;
+  color: var(--header-text-color);
 }
 
 #call-timer {
@@ -278,7 +334,7 @@ main {
   width: 180px;
   height: 180px;
   border-radius: 50%;
-  background-color: var(--box-bg-light);
+  background-color: var(--accent-color);
   margin: 40px 0;
   transform: scale(1);
   transition: transform 0.1s ease-out;
@@ -304,10 +360,7 @@ main {
 
 .call-btn.mute {
   background-color: var(--control-bg);
-}
-
-.call-btn.mute:hover {
-  background-color: #dcdfd6;
+  color: var(--text-color);
 }
 
 .call-btn.end-call {

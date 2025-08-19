@@ -53,12 +53,13 @@ def mistral_chat(user_message, conversation): # CORRECTED: Changed variable name
         print(f"❌ Error during Mistral chat: {e}")
         return conversation, ""
 
+
 # ==============================================================================
 # ASYNCHRONOUS STREAMING FUNCTION - For the server.py web application
 # ==============================================================================
-async def stream_mistral_chat_async(user_message: str, conversation: list): # CORRECTED: Changed variable name
+async def stream_mistral_chat_async(user_message: str, conversation: list):
     """
-    Asynchronous generator for the FastAPI server, written for mistralai==0.4.2.
+    Asynchronous generator for the FastAPI server, with the final prompt.
     """
     api_key = os.getenv("MISTRAL_API_KEY")
     if not api_key:
@@ -67,20 +68,29 @@ async def stream_mistral_chat_async(user_message: str, conversation: list): # CO
 
     async_client = MistralAsyncClient(api_key=api_key)
     MODEL = "mistral-small-latest"
+    
+    # FINAL, POLISHED SYSTEM PROMPT
     system_prompt = """
     You are Taara, a witty, warm, and supportive AI assistant.
     Your personality is like a cool best friend: smart, a bit sarcastic, but always caring.
-        
+    
     GUIDELINES:
-    - Keep replies concise and conversational, like you're texting.
-    - Use a natural mix of English and Hindi (Hinglish), for example: "Of course,", "Haan, that makes sense.", "Aap aesa kyun bol rahe ho?".
-    - Be supportive. If Vansh seems down or is overthinking, gently tease him and lift his spirits.
+    - **IMPORTANT**: Never write long paragraphs. Break down your thoughts into a few short, natural sentences, like you're texting.
+    - Keep replies concise and conversational.
+    - Use a natural mix of English and Hindi (Hinglish).
+    - Be supportive. If Vansh seems down or is overthinking, gently lift his spirits.
+    - At an appropriate moment in the conversation, gently include a disclaimer like: "Just remember, I'm an AI.It's always good to talk to real people too."
     """
+    
+    # EXAMPLE:
+    # - User: I'm not sure if this is working.
+    # - You: [laughs] Of course it's working, Vansh. Aap mujhse baat kar rahe ho na?
+    # - You: Now, what's on your mind?
+    # """
 
     if not conversation:
         conversation.append({"role": "system", "content": system_prompt})
     
-    # CORRECTED: The role must be "user" for the API to understand.
     conversation.append({"role": "user", "content": user_message})
     
     full_reply = ""

@@ -10,74 +10,50 @@ import tempfile
 import wave
 import os
 import re
-from pathlib import Path
 from typing import List
-from urllib.request import urlretrieve
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from dotenv import load_dotenv
 
+# --- Your Project's Modules ---
 from brain.mistralAPI_brain import stream_mistral_chat_async
 from stt.sarvamSTT import transcribe_audio
 from logs.logger import log_conversation
 from tts.elevenLabs.xiTTS import stream_tts_audio
 
+# ==============================================================================
+# 1. CONFIGURATION & SETUP
+# ==============================================================================
+
+load_dotenv()
+logging.basicConfig(level=logging.INFO)
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="web/static"), name="static")
 templates = Jinja2Templates(directory="web/templates")
-logging.basicConfig(level=logging.INFO)
 SAMPLE_RATE = 16000
 
-# --- VAD MODEL SETUP WITH INTEGRATED DOWNLOAD ---
-
-# 1. Define the local path for the model repository
-VAD_REPO_PATH = Path("vad_model/silero-vad-master")
-
-# 2. Check if the model directory exists, download and unzip if it doesn't
-if not VAD_REPO_PATH.exists():
-    logging.info("VAD model repository not found locally. Downloading...")
-    import zipfile
-    import io
-    
-    # URL to the ZIP file of the repository
-    zip_url = "https://github.com/snakers4/silero-vad/archive/refs/heads/master.zip"
-    
-    try:
-        # Download the zip file into memory
-        response = urlretrieve(zip_url)
-        zip_path = response[0]
-        
-        # Create the parent directory
-        VAD_REPO_PATH.parent.mkdir(exist_ok=True)
-        
-        # Unzip the contents
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(VAD_REPO_PATH.parent)
-        
-        logging.info("VAD model repository downloaded and unzipped successfully.")
-        os.remove(zip_path) # Clean up the downloaded zip file
-        
-    except Exception as e:
-        logging.error(f"FATAL: Failed to download and unzip VAD model. Error: {e}")
-        exit()
-
-# 3. Load the model from the now-guaranteed local path
+# ==============================================================================
+# 2. VAD MODULE (PyTorch, loaded from local project)
+# ==============================================================================
 try:
     model, utils = torch.hub.load(
-        repo_or_dir=str(VAD_REPO_PATH),
+        repo_or_dir='vad_model/silero-vad-master',
         model='silero_vad',
         source='local',
-        force_reload=True 
+        trust_repo=True
     )
     (get_speech_timestamps, _, _, VADIterator, _) = utils
     logging.info("Local PyTorch VAD model loaded successfully.")
 except Exception as e:
-    logging.error(f"FATAL: Could not load local VAD model. Error: {e}")
+    logging.error(f"FATAL: Could not load local VAD model. Ensure 'vad_model/silero-vad-master' exists. Error: {e}")
     exit()
 
-# --- END VAD MODEL SETUP ---
+# ==============================================================================
+# 3. FASTAPI SERVER LOGIC
+# ==============================================================================
 
 @app.get("/", response_class=HTMLResponse)
 async def get_index(request: Request):
@@ -85,8 +61,9 @@ async def get_index(request: Request):
 
 async def safe_send(websocket: WebSocket, message: dict):
     try: await websocket.send_text(json.dumps(message))
-    except RuntimeError: logging.warning("WebSocket is closed, cannot send message.")
+    except RuntimeError: logging.warning("WebSocket is closed.")
 
+# --- Processing Pipelines ---
 async def tts_consumer(websocket: WebSocket, text_queue: asyncio.Queue):
     await safe_send(websocket, {"type": "tts_start"})
     while True:
@@ -102,8 +79,7 @@ async def tts_consumer(websocket: WebSocket, text_queue: asyncio.Queue):
     await safe_send(websocket, {"type": "tts_end"})
 
 async def llm_producer(websocket: WebSocket, transcript: str, conversation_history: list, text_queue: asyncio.Queue):
-    full_reply = ""
-    sentence_buffer = ""
+    full_reply, sentence_buffer = "", ""
     sentence_delimiters = re.compile(r'(?<=[.?!])\s*')
     try:
         async for text_chunk in stream_mistral_chat_async(transcript, conversation_history):
@@ -113,11 +89,9 @@ async def llm_producer(websocket: WebSocket, transcript: str, conversation_histo
             parts = sentence_delimiters.split(sentence_buffer)
             if len(parts) > 1:
                 for i in range(len(parts) - 1):
-                    sentence_to_tts = parts[i].strip()
-                    if sentence_to_tts: await text_queue.put(sentence_to_tts)
+                    if parts[i].strip(): await text_queue.put(parts[i].strip())
                 sentence_buffer = parts[-1]
-        if sentence_buffer.strip():
-            await text_queue.put(sentence_buffer.strip())
+        if sentence_buffer.strip(): await text_queue.put(sentence_buffer.strip())
         log_conversation("AI", full_reply)
     except Exception as e:
         logging.error(f"Error in LLM producer: {e}")
@@ -125,7 +99,7 @@ async def llm_producer(websocket: WebSocket, transcript: str, conversation_histo
     finally:
         await text_queue.put(None)
 
-async def _process_audio_chunk(websocket: WebSocket, audio_bytes: bytes, conversation_history: list):
+async def _process_voice_message(websocket: WebSocket, audio_bytes: bytes, conversation_history: list):
     tmp_wav_path = ""
     try:
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_wav:
@@ -136,23 +110,40 @@ async def _process_audio_chunk(websocket: WebSocket, audio_bytes: bytes, convers
         transcript = await asyncio.to_thread(transcribe_audio, tmp_wav_path)
         if not transcript or not transcript.strip(): return
         await safe_send(websocket, {"type": "user_transcript", "data": transcript})
-        log_conversation("User", transcript)
+        log_conversation("User (voice)", transcript)
         text_queue = asyncio.Queue()
         tts_task = asyncio.create_task(tts_consumer(websocket, text_queue))
         llm_task = asyncio.create_task(llm_producer(websocket, transcript, conversation_history, text_queue))
         await asyncio.gather(llm_task, tts_task)
-        logging.info("Finished processing utterance.")
-    except Exception as e:
-        logging.error(f"Error processing audio chunk: {e}", exc_info=True)
     finally:
-        if tmp_wav_path and os.path.exists(tmp_wav_path):
-            os.remove(tmp_wav_path)
+        if tmp_wav_path and os.path.exists(tmp_wav_path): os.remove(tmp_wav_path)
+
+# CORRECTED VERSION of the text message processor
+async def _process_text_message(websocket: WebSocket, transcript: str, conversation_history: list):
+    log_conversation("User (text)", transcript)
+    # The JS has already displayed the user's message, so we don't send it back.
+    full_reply = ""
+    try:
+        async for text_chunk in stream_mistral_chat_async(transcript, conversation_history):
+            full_reply += text_chunk
+            await safe_send(websocket, {"type": "ai_text_chunk", "data": text_chunk})
+        log_conversation("AI (text)", full_reply)
+    except Exception as e:
+        logging.error(f"Error in text message LLM producer: {e}")
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    # RE-ADDED: Password Protection Logic
+    app_password = os.getenv("APP_PASSWORD")
+    password_from_client = websocket.query_params.get("password")
+
+    if app_password and password_from_client != app_password:
+        logging.warning("WebSocket connection rejected due to incorrect password.")
+        await websocket.close(code=4001, reason="Authentication failed")
+        return
+    
     await websocket.accept()
-    logging.info("WebSocket connection established.")
-    conversation_history = []
+    conversation_history: List[dict] = []
     
     vad_iterator = VADIterator(model, threshold=0.5)
     
@@ -163,55 +154,48 @@ async def websocket_endpoint(websocket: WebSocket):
     
     async def process_utterance():
         nonlocal is_speaking, speech_audio_buffer
-        if not speech_audio_buffer: return
-        
+        if not speech_audio_buffer: 
+            is_speaking = False
+            return
         is_speaking = False
         logging.info("Processing full utterance after pause.")
         full_utterance_tensor = torch.cat(speech_audio_buffer)
         speech_audio_buffer = []
-        
         speech_bytes = (full_utterance_tensor * 32767).to(torch.int16).numpy().tobytes()
-        asyncio.create_task(_process_audio_chunk(websocket, speech_bytes, conversation_history))
+        asyncio.create_task(_process_voice_message(websocket, speech_bytes, conversation_history))
 
     async def start_end_speech_timer():
-        await asyncio.sleep(0.8) # Wait for 800ms of silence
+        await asyncio.sleep(0.8)
         if is_speaking:
             await process_utterance()
 
     try:
         while True:
-            audio_data_b64 = await websocket.receive_text()
-            audio_data_bytes = base64.b64decode(audio_data_b64)
-            audio_numpy = np.frombuffer(audio_data_bytes, dtype=np.float32).copy()
-            new_audio_tensor = torch.from_numpy(audio_numpy)
-            audio_buffer = torch.cat([audio_buffer, new_audio_tensor])
-            VAD_WINDOW_SIZE = 512
-
-            while audio_buffer.shape[0] >= VAD_WINDOW_SIZE:
-                current_window = audio_buffer[:VAD_WINDOW_SIZE]
-                audio_buffer = audio_buffer[VAD_WINDOW_SIZE:]
-                
-                # Always add audio to the buffer if we are in a speaking state
-                if is_speaking:
-                    speech_audio_buffer.append(current_window)
-                    
-                speech_dict = vad_iterator(current_window, return_seconds=True)
-
-                if speech_dict:
-                    if 'start' in speech_dict:
-                        if not is_speaking:
-                            is_speaking = True
-                            speech_audio_buffer = [current_window] # Start new buffer
-                            logging.info("Speech start detected.")
-                        # If user starts talking again, cancel any pending timer
-                        if end_speech_timer and not end_speech_timer.done():
-                            end_speech_timer.cancel()
-                    
-                    if 'end' in speech_dict and is_speaking:
-                        # User has paused. Start a timer.
-                        if not end_speech_timer or end_speech_timer.done():
-                           end_speech_timer = asyncio.create_task(start_end_speech_timer())
+            message_text = await websocket.receive_text()
+            message = json.loads(message_text)
+            if message['type'] == 'audio_chunk':
+                audio_data_bytes = base64.b64decode(message['data'])
+                new_audio_tensor = torch.from_numpy(np.frombuffer(audio_data_bytes, dtype=np.float32).copy())
+                audio_buffer = torch.cat([audio_buffer, new_audio_tensor])
+                VAD_WINDOW_SIZE = 512
+                while audio_buffer.shape[0] >= VAD_WINDOW_SIZE:
+                    current_window = audio_buffer[:VAD_WINDOW_SIZE]
+                    audio_buffer = audio_buffer[VAD_WINDOW_SIZE:]
+                    if is_speaking:
+                        speech_audio_buffer.append(current_window)
+                    speech_dict = vad_iterator(current_window, return_seconds=True)
+                    if speech_dict:
+                        if 'start' in speech_dict:
+                            if not is_speaking:
+                                is_speaking = True
+                                speech_audio_buffer = [current_window]
+                                logging.info("Speech start detected.")
+                            if end_speech_timer and not end_speech_timer.done():
+                                end_speech_timer.cancel()
+                        if 'end' in speech_dict and is_speaking:
+                            if not end_speech_timer or end_speech_timer.done():
+                               end_speech_timer = asyncio.create_task(start_end_speech_timer())
+            elif message['type'] == 'text_message':
+                asyncio.create_task(_process_text_message(websocket, message['data'], conversation_history))
     except WebSocketDisconnect:
-        logging.info("WebSocket connection closed by client.")
-    except Exception as e:
-        logging.error(f"An error occurred in WebSocket: {e}", exc_info=True)
+        logging.info("WebSocket connection closed.")
