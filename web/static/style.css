@@ -1,17 +1,34 @@
+/*
+    COLOR PALETTE:
+    Rich Black:  #071013
+    Indian Red:  #EB5160
+    Rosy Brown:  #B7999C
+    Silver:      #AAAAAA
+    Platinum:    #DFE0E2
+*/
+
 :root {
-  --primary-bg: #fff5d7;
-  --text-color: #4E443A;
-  --header-text-color: #4E443A;
-  --muted-text: #BCAAA4;
-  --accent-color: #ff5e6c;
-  --soft-accent-color: #ffaaab;
-  --container-bg: #F5E9C9;
-  --ai-bubble-bg: #FFFFFF;
-  --user-bubble-bg: #4E443A;
+  /* --- NEW BOLD & LUXURIOUS DARK THEME --- */
+  --primary-bg: #071013;
+  --text-color: #DFE0E2;
+  --header-text-color: #FFFFFF;
+  --muted-text: #AAAAAA;
+
+  /* Interactive Elements */
+  --accent-color: #EB5160;
+  --soft-accent-color: #B7999C;
+
+  /* Containers and Bubbles */
+  --container-bg: #1a2428;
+  /* A slightly lighter black for depth */
+  --ai-bubble-bg: #363636;
+  --user-bubble-bg: var(--accent-color);
   --user-bubble-text: #FFFFFF;
-  --control-bg: #FFFFFF;
-  --end-call-bg: var(--soft-accent-color);
-  --end-call-text: #4E443A;
+
+  /* Controls */
+  --control-bg: #363636;
+  --end-call-bg: var(--accent-color);
+  --end-call-text: #FFFFFF;
 }
 
 * {
@@ -61,6 +78,12 @@ header {
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.login-btn:hover {
+  background-color: var(--text-color);
+  color: var(--primary-bg);
 }
 
 main {
@@ -79,16 +102,15 @@ main {
 }
 
 .status-gif {
-  display: none;
-  height: 100%;
-  filter: opacity(75%) saturate(50%);
+    display: none;
+    height: 100%;
+    background-color: transparent;
 }
 
 .status-gif.active {
   display: block;
 }
 
-/* ONLY CHANGE: Re-added the mode indicator style */
 .mode-indicator {
   font-size: 14px;
   font-weight: 500;
@@ -132,7 +154,7 @@ main {
   flex-direction: column;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   height: 520px;
   width: 620px;
 }
@@ -148,7 +170,7 @@ main {
   gap: 15px;
   flex: 1;
   transition: flex 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
-  color: var(--text-color);
+  color: var(--header-text-color);
 }
 
 .contact-card:hover {
@@ -156,7 +178,7 @@ main {
 }
 
 .contact-card.taara {
-  background-color: var(--soft-accent-color);
+  background-color: var(--accent-color);
 }
 
 .contact-card.veer {
@@ -165,7 +187,7 @@ main {
 
 .status-box {
   background-color: var(--container-bg);
-  color: var(--text-color);
+  color: var(--header-text-color);
   padding: 80px 60px;
   border-radius: 12px;
   text-align: center;
@@ -174,9 +196,9 @@ main {
 }
 
 .go-back-button {
-  background-color: #fff;
-  border: 1px solid #ccc;
-  color: var(--text-color);
+  background-color: #474747;
+  border: 1px solid #555;
+  color: #fff;
   padding: 10px 20px;
   border-radius: 8px;
   margin-top: 30px;
@@ -221,12 +243,12 @@ main {
 }
 
 .chat-log::-webkit-scrollbar-thumb {
-  background: var(--container-bg);
+  background: #555;
   border-radius: 4px;
 }
 
 .chat-log::-webkit-scrollbar-thumb:hover {
-  background: var(--soft-accent-color);
+  background: #777;
 }
 
 @keyframes fade-slide-up {
@@ -248,7 +270,6 @@ main {
   line-height: 1.5;
   animation: fade-slide-up 0.4s ease-out forwards;
   word-wrap: break-word;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
 .ai-message {
@@ -281,7 +302,8 @@ main {
 #chat-input {
   flex-grow: 1;
   border: 1px solid var(--container-bg);
-  background-color: #fff;
+  background-color: #474747;
+  color: #fff;
   border-radius: 20px;
   padding: 10px 15px;
   font-size: 16px;
@@ -307,8 +329,6 @@ main {
   display: flex;
   justify-content: center;
   align-items: center;
-  border-left: 1px solid var(--container-bg);
-  padding-left: 2vw;
 }
 
 .call-wrapper {
@@ -356,11 +376,11 @@ main {
   display: flex;
   align-items: center;
   gap: 10px;
+  color: var(--header-text-color);
 }
 
 .call-btn.mute {
   background-color: var(--control-bg);
-  color: var(--text-color);
 }
 
 .call-btn.end-call {
