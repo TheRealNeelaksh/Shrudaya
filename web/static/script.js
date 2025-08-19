@@ -1,7 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // ==============================================================================
-    // 1. UI ELEMENT SELECTION
-    // ==============================================================================
+    // UI Elements
     const contactScreen = document.getElementById('contact-screen');
     const loadingScreen = document.getElementById('loading-screen');
     const callScreen = document.getElementById('call-screen');
@@ -17,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const callName = document.getElementById('call-name');
     const callTimer = document.getElementById('call-timer');
     const callVisualizer = document.getElementById('call-visualizer');
-    const modeIndicator = document.getElementById('mode-indicator');
+    const modeIndicator = document.getElementById('mode-indicator'); // RESTORED
     const allGifs = {
         listening: document.getElementById('status-listening'),
         processing: document.getElementById('status-processing'),
@@ -28,9 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const connectionChime = document.getElementById('connection-chime');
     const typingSound = document.getElementById('typing-sound');
 
-    // ==============================================================================
-    // 2. STATE VARIABLES
-    // ==============================================================================
+    // State variables
     let socket;
     let audioContext, workletNode, mediaStream;
     let timerInterval, seconds = 0;
@@ -39,10 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let isAiSpeaking = false, isMuted = false;
     let currentAiMessageElement = null;
     let aiSpeakingAnimationId;
-
-    // ==============================================================================
-    // 3. CORE FUNCTIONS (Each defined ONLY ONCE in the correct scope)
-    // ==============================================================================
 
     const updateStatusIndicator = (state) => {
         if (isMuted && state !== 'idle') { state = 'muted'; }
@@ -123,14 +115,12 @@ document.addEventListener('DOMContentLoaded', () => {
             await audioContext.audioWorklet.addModule('/static/audio-processor.js');
             workletNode = new AudioWorkletNode(audioContext, 'audio-processor');
             workletNode.port.onmessage = (event) => {
-                // Foolproof hot mic check
                 if (isMuted || isAiSpeaking || audioQueue.length > 0 || socket?.readyState !== WebSocket.OPEN) return;
                 
                 const audioBuffer = event.data;
                 const base64Data = btoa(String.fromCharCode.apply(null, new Uint8Array(audioBuffer)));
                 socket.send(JSON.stringify({ type: 'audio_chunk', data: base64Data }));
 
-                // Restored circle animation for your voice
                 const floatArray = new Float32Array(audioBuffer);
                 const avgVolume = floatArray.reduce((a, b) => a + Math.abs(b), 0) / floatArray.length;
                 let scale = 1 + avgVolume * 8;
@@ -191,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateStatusIndicator('speaking');
                 startAiSpeakingAnimation();
             } else if (msg.type === 'tts_end') {
-                // THE FIX for "Hot Mic": Wait 2 seconds before resuming mic.
+                // YOUR FIX: Wait 2 seconds before resuming mic.
                 setTimeout(() => {
                     isAiSpeaking = false;
                     updateStatusIndicator('listening');
@@ -232,8 +222,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateMuteButton = () => {
         if (isMuted) {
             muteBtn.innerHTML = `<i class="fas fa-microphone"></i> Unmute`;
+            // RESTORED: Mode indicator logic
+            modeIndicator.textContent = "TEXT MODE";
+            modeIndicator.classList.add('visible');
         } else {
             muteBtn.innerHTML = `<i class="fas fa-microphone-slash"></i> Mute`;
+            // RESTORED: Mode indicator logic
+            modeIndicator.textContent = "VOICE MODE";
+            modeIndicator.classList.add('visible');
+            setTimeout(() => { modeIndicator.classList.remove('visible'); }, 2000);
         }
     };
     
@@ -265,10 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateStatusIndicator('processing');
         }
     };
-
-    // ==============================================================================
-    // 4. EVENT LISTENERS
-    // ==============================================================================
+    
     callTaaraBtn.addEventListener('click', () => startCall('Taara'));
     callVeerBtn.addEventListener('click', () => showScreen('not-available-screen'));
     goBackBtn.addEventListener('click', () => showScreen('contact-screen'));
