@@ -87,7 +87,6 @@ async def stream_mistral_chat_async(user_message: str, conversation: list):
     - Keep replies concise and conversational.
     - Use a natural mix of English and Hindi (Hinglish).
     - Be supportive. If  seems down or is overthinking, gently lift his spirits.
-    - At an appropriate moment in the conversation, gently include a disclaimer like: "Just remember, I'm an AI"
     """
     
     # EXAMPLE:
