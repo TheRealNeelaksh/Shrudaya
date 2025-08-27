@@ -28,12 +28,17 @@ from tts.elevenLabs.xiTTS import stream_tts_audio
 # 1. CONFIGURATION & SETUP
 # ==============================================================================
 
-load_dotenv()
+load_dotenv() 
 logging.basicConfig(level=logging.INFO)
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="web/static"), name="static")
 templates = Jinja2Templates(directory="web/templates")
 SAMPLE_RATE = 16000
+
+# --- Get Supabase credentials from environment ---
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
+
 
 # ==============================================================================
 # 2. VAD MODULE (PyTorch, loaded from local project)
@@ -57,13 +62,34 @@ except Exception as e:
 
 @app.get("/", response_class=HTMLResponse)
 async def get_index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "supabase_url": SUPABASE_URL,
+        "supabase_anon_key": SUPABASE_ANON_KEY
+    })
+
+@app.get("/auth", response_class=HTMLResponse)
+async def get_auth_page(request: Request):
+    return templates.TemplateResponse("auth.html", {
+        "request": request,
+        "supabase_url": SUPABASE_URL,
+        "supabase_anon_key": SUPABASE_ANON_KEY
+    })
+
+# --- ADDED: Route for the new authentication page design ---
+@app.get("/auth_v2", response_class=HTMLResponse)
+async def get_auth_page_v2(request: Request):
+    return templates.TemplateResponse("auth.html", {
+        "request": request,
+        "supabase_url": SUPABASE_URL,
+        "supabase_anon_key": SUPABASE_ANON_KEY
+    })
 
 async def safe_send(websocket: WebSocket, message: dict):
     try: await websocket.send_text(json.dumps(message))
     except RuntimeError: logging.warning("WebSocket is closed.")
 
-# --- Processing Pipelines ---
+# --- Processing Pipelines (Unchanged) ---
 async def tts_consumer(websocket: WebSocket, text_queue: asyncio.Queue):
     await safe_send(websocket, {"type": "tts_start"})
     while True:
@@ -118,10 +144,8 @@ async def _process_voice_message(websocket: WebSocket, audio_bytes: bytes, conve
     finally:
         if tmp_wav_path and os.path.exists(tmp_wav_path): os.remove(tmp_wav_path)
 
-# CORRECTED VERSION of the text message processor
 async def _process_text_message(websocket: WebSocket, transcript: str, conversation_history: list):
     log_conversation("User (text)", transcript)
-    # The JS has already displayed the user's message, so we don't send it back.
     full_reply = ""
     try:
         async for text_chunk in stream_mistral_chat_async(transcript, conversation_history):
@@ -133,15 +157,6 @@ async def _process_text_message(websocket: WebSocket, transcript: str, conversat
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    # RE-ADDED: Password Protection Logic
-    app_password = os.getenv("APP_PASSWORD")
-    password_from_client = websocket.query_params.get("password")
-
-    if app_password and password_from_client != app_password:
-        logging.warning("WebSocket connection rejected due to incorrect password.")
-        await websocket.close(code=4001, reason="Authentication failed")
-        return
-    
     await websocket.accept()
     conversation_history: List[dict] = []
     

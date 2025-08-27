@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Vaani</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', path='auth.css') }}">
+</head>
+<body>
+
+<div class="auth-container">
+    <div class="video-panel">
+        <video autoplay loop muted playsinline src="{{ url_for('static', path='assets/robot-greeting.mp4') }}"></video>
+    </div>
+    <div class="form-panel">
+        <!-- Login Form -->
+        <div id="login-section" class="form-section">
+            <form id="form-login">
+                <h1>Log In</h1>
+                <div class="input-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" name="email" required />
+                </div>
+                <div class="input-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" name="password" required />
+                </div>
+                <button type="submit" class="submit-btn">Log In</button>
+                <div class="message"></div>
+            </form>
+        </div>
+
+        <!-- Signup Form -->
+        <div id="signup-section" class="form-section">
+            <form id="form-signup">
+                <h1>Create Account</h1>
+                <div class="name-group">
+                    <div class="input-group">
+                        <label for="firstName">First Name</label>
+                        <input type="text" id="firstName" name="firstName" required />
+                    </div>
+                    <div class="input-group">
+                        <label for="lastName">Last Name</label>
+                        <input type="text" id="lastName" name="lastName" required />
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" name="email" required />
+                </div>
+                <div class="input-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" name="password" required />
+                </div>
+                <div class="input-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required />
+                </div>
+                <div class="input-group">
+                    <label for="dob">Date of Birth</label>
+                    <input type="date" id="dob" name="dob" required />
+                </div>
+                <button type="submit" class="submit-btn">Sign Up</button>
+                <div class="message"></div>
+            </form>
+        </div>
+
+        <!-- Corrected Tab Placement -->
+        <div class="side-tabs">
+            <div class="tab" id="signup-tab">Sign Up</div>
+            <div class="tab" id="login-tab">Log In</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Pass server-side variables to the global window object for the external script
+    window.supabase_url = "{{ supabase_url }}";
+    window.supabase_anon_key = "{{ supabase_anon_key }}";
+</script>
+<script src="{{ url_for('static', path='auth.js') }}"></script>
+
+</body>
+</html>

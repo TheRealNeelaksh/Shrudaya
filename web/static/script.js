@@ -1,9 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // UI Elements
-    const contactScreen = document.getElementById('contact-screen');
-    const loadingScreen = document.getElementById('loading-screen');
-    const callScreen = document.getElementById('call-screen');
-    const notAvailableScreen = document.getElementById('not-available-screen');
+    // --- 1. SUPABASE SETUP ---
+    const { createClient } = supabase;
+    // --- MODIFIED: Receive credentials from the server ---
+    // These will be injected by Jinja2 in the main index.html
+    const SUPABASE_URL = "{{ supabase_url }}";
+    const SUPABASE_ANON_KEY = "{{ supabase_anon_key }}";
+
+    // Gracefully handle missing credentials
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        alert("Supabase credentials are not set in the .env file. Please add them and restart the server.");
+    }
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // --- 2. UI ELEMENTS ---
+    const loginBtn = document.getElementById('login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
     const callTaaraBtn = document.getElementById('call-taara');
     const callVeerBtn = document.getElementById('call-veer');
     const endCallBtn = document.getElementById('end-call-btn');
@@ -15,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const callName = document.getElementById('call-name');
     const callTimer = document.getElementById('call-timer');
     const callVisualizer = document.getElementById('call-visualizer');
-    const modeIndicator = document.getElementById('mode-indicator'); // RESTORED
+    const modeIndicator = document.getElementById('mode-indicator');
     const allGifs = {
         listening: document.getElementById('status-listening'),
         processing: document.getElementById('status-processing'),
@@ -26,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const connectionChime = document.getElementById('connection-chime');
     const typingSound = document.getElementById('typing-sound');
 
-    // State variables
+    // --- 3. STATE VARIABLES ---
     let socket;
     let audioContext, workletNode, mediaStream;
     let timerInterval, seconds = 0;
@@ -35,7 +46,35 @@ document.addEventListener('DOMContentLoaded', () => {
     let isAiSpeaking = false, isMuted = false;
     let currentAiMessageElement = null;
     let aiSpeakingAnimationId;
+    let currentUser = null;
 
+    // --- 4. AUTHENTICATION LOGIC ---
+    const checkSession = async () => {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        currentUser = session?.user ?? null;
+        updateUIBasedOnAuth();
+    };
+
+    const updateUIBasedOnAuth = () => {
+        if (currentUser) {
+            loginBtn.style.display = 'none';
+            logoutBtn.style.display = 'block';
+        } else {
+            loginBtn.style.display = 'block';
+            logoutBtn.style.display = 'none';
+        }
+    };
+
+    logoutBtn.addEventListener('click', async () => {
+        await supabaseClient.auth.signOut();
+        currentUser = null;
+        updateUIBasedOnAuth();
+    });
+    
+    // Initial check when the page loads
+    checkSession();
+
+    // --- 5. CORE APPLICATION FUNCTIONS (with modifications) ---
     const updateStatusIndicator = (state) => {
         if (isMuted && state !== 'idle') { state = 'muted'; }
         Object.values(allGifs).forEach(gif => gif.classList.remove('active'));
@@ -57,9 +96,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const startCall = (contact) => {
-        const password = prompt("Please enter the password to connect:");
-        if (!password) return;
+        // MODIFICATION: Check for login status before starting a call
+        if (!currentUser) {
+            alert("Please log in to make a call.");
+            window.location.href = "/auth";
+            return;
+        }
 
+        // MODIFICATION: Removed password prompt
         chatLog.innerHTML = '';
         isMuted = false;
         showScreen('loading-screen');
@@ -74,7 +118,8 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 setupAudioPlayback();
                 const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const wsUrl = `${wsProtocol}//${window.location.host}/ws?password=${encodeURIComponent(password)}`;
+                // MODIFICATION: No password in WebSocket URL
+                const wsUrl = `${wsProtocol}//${window.location.host}/ws`;
                 socket = new WebSocket(wsUrl);
                 
                 socket.onopen = () => {
@@ -89,7 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 socket.onmessage = handleSocketMessage;
                 socket.onclose = (event) => {
-                    if (event.code === 4001) { alert("Authentication failed."); }
                     endCall(`Connection closed (code: ${event.code})`);
                 };
                 socket.onerror = () => endCall('A connection error occurred.');
@@ -181,12 +225,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateStatusIndicator('speaking');
                 startAiSpeakingAnimation();
             } else if (msg.type === 'tts_end') {
-                // YOUR FIX: Wait 2 seconds before resuming mic.
                 setTimeout(() => {
                     isAiSpeaking = false;
                     updateStatusIndicator('listening');
                     stopAiSpeakingAnimation();
-                }, 2000); // 2000ms = 2 seconds
+                }, 2000);
             }
         }
     }
@@ -222,12 +265,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateMuteButton = () => {
         if (isMuted) {
             muteBtn.innerHTML = `<i class="fas fa-microphone"></i> Unmute`;
-            // RESTORED: Mode indicator logic
             modeIndicator.textContent = "TEXT MODE";
             modeIndicator.classList.add('visible');
         } else {
             muteBtn.innerHTML = `<i class="fas fa-microphone-slash"></i> Mute`;
-            // RESTORED: Mode indicator logic
             modeIndicator.textContent = "VOICE MODE";
             modeIndicator.classList.add('visible');
             setTimeout(() => { modeIndicator.classList.remove('visible'); }, 2000);
@@ -263,6 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
+    // --- 6. EVENT LISTENERS ---
     callTaaraBtn.addEventListener('click', () => startCall('Taara'));
     callVeerBtn.addEventListener('click', () => showScreen('not-available-screen'));
     goBackBtn.addEventListener('click', () => showScreen('contact-screen'));

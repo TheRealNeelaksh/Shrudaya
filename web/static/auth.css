@@ -1,0 +1,193 @@
+/*
+    STYLES FOR THE AUTHENTICATION PAGE (CORRECTED VIDEO SCALING)
+*/
+:root {
+    --primary-bg: #071013;
+    --text-color: #DFE0E2;
+    --header-text-color: #FFFFFF;
+    --muted-text: #AAAAAA;
+    --accent-color: #EB5160;
+    --container-bg: #1a2428;
+    --input-bg: #363636;
+    --white-bg: #FFFFFF;
+    --dark-text: #111827;
+    --form-bg: #f6f7f9;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: var(--primary-bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+}
+
+.auth-container {
+    display: flex;
+    width: 1000px;
+    height: 650px;
+    background-color: var(--white-bg);
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.video-panel {
+    flex-basis: 50%;
+    background-color: var(--accent-color); /* The 'red bar' */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    position: relative;
+}
+
+.video-panel video {
+    position: absolute;
+    /* MODIFIED: This is the key change.
+      By setting the width to the panel's height and height to the panel's width,
+      the video will perfectly fill the space after being rotated 90 degrees
+      without excessive zooming.
+    */
+    width: 650px;  /* The height of the container */
+    height: 500px; /* The width of the video panel */
+    object-fit: cover;
+    transform: rotate(90deg);
+}
+
+.form-panel {
+    flex-basis: 50%;
+    position: relative; /* This is crucial for positioning the tabs */
+    display: flex;
+}
+
+.form-section {
+    width: 100%;
+    height: 100%;
+    padding: 3rem 4rem;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: absolute;
+    transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+}
+
+#login-section {
+    opacity: 1;
+    transform: scale(1);
+    z-index: 2;
+}
+
+#signup-section {
+    opacity: 0;
+    transform: scale(0.98);
+    pointer-events: none;
+    z-index: 1;
+}
+
+h1 {
+    font-weight: 800;
+    color: var(--dark-text);
+    margin: 0;
+    margin-bottom: 2rem;
+    font-size: 2.5rem;
+}
+
+.input-group {
+    width: 100%;
+    margin-bottom: 1rem;
+    text-align: left;
+}
+
+.input-group label {
+    font-size: 12px;
+    color: #555;
+    margin-bottom: 4px;
+    display: block;
+    font-weight: 600;
+}
+
+input {
+    background-color: var(--form-bg);
+    border: 1px solid #ddd;
+    padding: 12px 15px;
+    margin: 0;
+    width: 100%;
+    border-radius: 8px;
+    outline: none;
+    box-sizing: border-box;
+}
+
+input:focus {
+    border-color: var(--accent-color);
+}
+
+.name-group {
+    display: flex;
+    gap: 10px;
+}
+.name-group .input-group {
+    width: 50%;
+}
+
+.submit-btn {
+    border-radius: 8px;
+    border: none;
+    background-color: var(--accent-color);
+    color: #FFFFFF;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 12px 45px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: background-color 0.2s;
+    cursor: pointer;
+    margin-top: 1.5rem;
+}
+
+.submit-btn:hover {
+    background-color: #d14150;
+}
+
+.side-tabs {
+    position: absolute;
+    top: 50%;
+    right: 0; 
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 100;
+}
+
+.tab {
+    background-color: var(--accent-color);
+    color: white;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    padding: 25px 12px;
+    border-radius: 8px 0 0 8px; 
+    cursor: pointer;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    transition: opacity 0.2s;
+    opacity: 1;
+}
+
+.tab.active {
+    opacity: 0.7;
+}
+
+.message {
+    margin-top: 1rem;
+    font-size: 14px;
+    font-weight: 500;
+    height: 20px;
+    text-align: center;
+}

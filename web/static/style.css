@@ -7,6 +7,7 @@
     Platinum:    #DFE0E2
 */
 
+
 :root {
   /* --- NEW BOLD & LUXURIOUS DARK THEME --- */
   --primary-bg: #071013;
@@ -79,6 +80,7 @@ header {
   font-size: 14px;
   font-weight: 500;
   transition: background-color 0.2s, color 0.2s;
+  text-decoration: none; /* For the 'a' tag */
 }
 
 .login-btn:hover {
@@ -129,7 +131,7 @@ main {
 .screen {
   width: 100%;
   height: 100%;
-  display: flex;
+  display: none; /* Changed from flex to none */
   flex-direction: column;
   justify-content: center;
   align-items: center;
@@ -143,6 +145,7 @@ main {
 }
 
 .screen.active {
+  display: flex; /* Active screen is flex */
   opacity: 1;
   position: relative;
   pointer-events: auto;
