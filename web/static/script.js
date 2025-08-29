@@ -1,11 +1,33 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // UI Elements
-    const contactScreen = document.getElementById('contact-screen');
-    const loadingScreen = document.getElementById('loading-screen');
-    const callScreen = document.getElementById('call-screen');
-    const notAvailableScreen = document.getElementById('not-available-screen');
-    const callTaaraBtn = document.getElementById('call-taara');
-    const callVeerBtn = document.getElementById('call-veer');
+    // --- THEME SWITCHER LOGIC ---
+    const themeToggle = document.getElementById('theme-toggle');
+    const body = document.body;
+
+    const applySavedTheme = () => {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            body.dataset.theme = 'dark';
+            themeToggle.checked = true;
+        } else {
+            body.dataset.theme = 'light';
+            themeToggle.checked = false;
+        }
+    };
+
+    themeToggle.addEventListener('change', () => {
+        if (themeToggle.checked) {
+            body.dataset.theme = 'dark';
+            localStorage.setItem('theme', 'dark');
+        } else {
+            body.dataset.theme = 'light';
+            localStorage.setItem('theme', 'light');
+        }
+    });
+    applySavedTheme();
+
+    // --- MAIN APPLICATION UI ELEMENTS ---
+    const accessTaaraBtn = document.querySelector('.access-button[data-model="Taara"]');
+    const accessVeerBtn = document.querySelector('.access-button[data-model="Veer"]');
     const endCallBtn = document.getElementById('end-call-btn');
     const goBackBtn = document.getElementById('go-back-btn');
     const muteBtn = document.getElementById('mute-btn');
@@ -15,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const callName = document.getElementById('call-name');
     const callTimer = document.getElementById('call-timer');
     const callVisualizer = document.getElementById('call-visualizer');
-    const modeIndicator = document.getElementById('mode-indicator'); // RESTORED
+    const modeIndicator = document.getElementById('mode-indicator');
     const allGifs = {
         listening: document.getElementById('status-listening'),
         processing: document.getElementById('status-processing'),
@@ -36,15 +58,25 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentAiMessageElement = null;
     let aiSpeakingAnimationId;
 
+    // --- SCREEN MANAGEMENT LOGIC ---
+    if (document.getElementById('model-select-screen').classList.contains('active')) {
+        body.classList.add('selection-view');
+    }
+    
+    const showScreen = (screenId) => {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+        if (screenId === 'model-select-screen') {
+            body.classList.add('selection-view');
+        } else {
+            body.classList.remove('selection-view');
+        }
+    };
+
     const updateStatusIndicator = (state) => {
         if (isMuted && state !== 'idle') { state = 'muted'; }
         Object.values(allGifs).forEach(gif => gif.classList.remove('active'));
         if (allGifs[state]) allGifs[state].classList.add('active');
-    };
-
-    const showScreen = (screenId) => {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(screenId).classList.add('active');
     };
 
     const addMessageToChatLog = (sender, text) => {
@@ -74,7 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 setupAudioPlayback();
                 const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const wsUrl = `${wsProtocol}//${window.location.host}/ws?password=${encodeURIComponent(password)}`;
+                // MODIFIED: Pass the selected character name as a URL parameter
+                const wsUrl = `${wsProtocol}//${window.location.host}/ws?password=${encodeURIComponent(password)}&character=${contact}`;
                 socket = new WebSocket(wsUrl);
                 
                 socket.onopen = () => {
@@ -181,12 +214,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateStatusIndicator('speaking');
                 startAiSpeakingAnimation();
             } else if (msg.type === 'tts_end') {
-                // YOUR FIX: Wait 2 seconds before resuming mic.
                 setTimeout(() => {
                     isAiSpeaking = false;
                     updateStatusIndicator('listening');
                     stopAiSpeakingAnimation();
-                }, 2000); // 2000ms = 2 seconds
+                }, 2000); 
             }
         }
     }
@@ -204,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (audioElement && audioElement.src) URL.revokeObjectURL(audioElement.src);
         audioQueue = []; isAiSpeaking = false;
         stopAiSpeakingAnimation();
-        showScreen('contact-screen');
+        showScreen('model-select-screen');
         updateStatusIndicator('idle');
         modeIndicator.classList.remove('visible');
     };
@@ -222,12 +254,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateMuteButton = () => {
         if (isMuted) {
             muteBtn.innerHTML = `<i class="fas fa-microphone"></i> Unmute`;
-            // RESTORED: Mode indicator logic
             modeIndicator.textContent = "TEXT MODE";
             modeIndicator.classList.add('visible');
         } else {
             muteBtn.innerHTML = `<i class="fas fa-microphone-slash"></i> Mute`;
-            // RESTORED: Mode indicator logic
             modeIndicator.textContent = "VOICE MODE";
             modeIndicator.classList.add('visible');
             setTimeout(() => { modeIndicator.classList.remove('visible'); }, 2000);
@@ -263,9 +293,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    callTaaraBtn.addEventListener('click', () => startCall('Taara'));
-    callVeerBtn.addEventListener('click', () => showScreen('not-available-screen'));
-    goBackBtn.addEventListener('click', () => showScreen('contact-screen'));
+    // --- EVENT LISTENERS ---
+    accessTaaraBtn.addEventListener('click', () => startCall('Taara'));
+    // MODIFIED: Veer is now fully functional
+    accessVeerBtn.addEventListener('click', () => startCall('Veer'));
+    goBackBtn.addEventListener('click', () => showScreen('model-select-screen'));
     endCallBtn.addEventListener('click', () => endCall());
     muteBtn.addEventListener('click', toggleMute);
     chatForm.addEventListener('submit', handleTextMessageSubmit);
