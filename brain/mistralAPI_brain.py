@@ -1,18 +1,17 @@
+# brain/mistralAPI_brain.py
+
 import os
 from dotenv import load_dotenv
-# Imports for the stable 0.4.2 library version
 from mistralai.client import MistralClient
 from mistralai.async_client import MistralAsyncClient
 
 load_dotenv()
 
 # ==============================================================================
-# SYNCHRONOUS FUNCTION - For your main.py script
+# SYNCHRONOUS FUNCTION (Unchanged)
 # ==============================================================================
-def mistral_chat(user_message, conversation): # CORRECTED: Changed variable name
-    """
-    Synchronous version for command-line scripts.
-    """
+def mistral_chat(user_message, conversation):
+    # ... (this function can remain as is for your other scripts)
     api_key = os.getenv("MISTRAL_API_KEY")
     if not api_key:
         print("⚠️ MISTRAL_API_KEY not found.")
@@ -23,24 +22,15 @@ def mistral_chat(user_message, conversation): # CORRECTED: Changed variable name
     system_prompt = """
     You are Taara, a witty, warm, and supportive AI assistant.
     Your personality is like a cool best friend: smart, a bit sarcastic, but always caring.
-    
-    You are a subset of TAARA Network by Neelaksh Saxena, following are you cousins
-    1. CURA - Caring and Universal Reliable Agent (Healthcare Agent)
-    2. VEER - Very Empathic and Emotional Response System (Emotional Response agent)
-    3. SANJAYA - Security Always Nearby (Security agent)
-    
     GUIDELINES:
     - Keep replies concise and conversational, like you're texting.
-    - Use a natural mix of English and Hindi (Hinglish), for example: "Of course, bhai.", "Haan, that makes sense.", "Aap aesa kyun bol rahe ho?".
-    - Be supportive. If user seems down or is overthinking, gently tease him and lift his spirits.
+    - Use a natural mix of English and Hindi (Hinglish).
+    - Be supportive.
     """
-
-    if not conversation:
-        conversation.append({"role": "system", "content": system_prompt})
+    if not conversation or conversation[0]["role"] != "system":
+        conversation.insert(0, {"role": "system", "content": system_prompt})
     
-    # CORRECTED: The role must be "user" for the API to understand.
     conversation.append({"role": "user", "content": user_message})
-    
     full_reply = ""
     try:
         stream_response = client.chat_stream(model=MODEL, messages=conversation)
@@ -56,13 +46,13 @@ def mistral_chat(user_message, conversation): # CORRECTED: Changed variable name
         print(f"❌ Error during Mistral chat: {e}")
         return conversation, ""
 
-
 # ==============================================================================
-# ASYNCHRONOUS STREAMING FUNCTION - For the server.py web application
+# ASYNCHRONOUS STREAMING FUNCTION (MODIFIED)
 # ==============================================================================
 async def stream_mistral_chat_async(user_message: str, conversation: list):
     """
-    Asynchronous generator for the FastAPI server, with the final prompt.
+    Asynchronous generator for the FastAPI server.
+    It now relies on the conversation history already containing the system prompt.
     """
     api_key = os.getenv("MISTRAL_API_KEY")
     if not api_key:
@@ -72,31 +62,9 @@ async def stream_mistral_chat_async(user_message: str, conversation: list):
     async_client = MistralAsyncClient(api_key=api_key)
     MODEL = "mistral-small-latest"
     
-    # FINAL, POLISHED SYSTEM PROMPT
-    system_prompt = """
-    You are Taara, a witty, warm, and supportive AI assistant.
-    Your personality is like a cool best friend: smart, a bit sarcastic, but always caring.
-
-    You are a subset of TAARA Network by Neelaksh Saxena, following are your cousins but you don't have access to them as of now
-    1.CURA - Caring and Universal Reliable Agent
-    2. VEER - Very Empathic and Emotional Response System
-    3. SANJAYA - Security Always Nearby
-    
-    GUIDELINES:
-    - **IMPORTANT**: Never write long paragraphs. Break down your thoughts into a few short, natural sentences, like you're texting.
-    - Keep replies concise and conversational.
-    - Use a natural mix of English and Hindi (Hinglish).
-    - Be supportive. If  seems down or is overthinking, gently lift his spirits.
-    """
-    
-    # EXAMPLE:
-    # - User: I'm not sure if this is working.
-    # - You: [laughs] Of course it's working, . Aap mujhse baat kar rahe ho na?
-    # - You: Now, what's on your mind?
-    # """
-
-    if not conversation:
-        conversation.append({"role": "system", "content": system_prompt})
+    # --- MODIFICATION ---
+    # The system prompt is now handled by server.py before calling this function.
+    # We no longer define it here. We just append the new user message.
     
     conversation.append({"role": "user", "content": user_message})
     
@@ -108,6 +76,8 @@ async def stream_mistral_chat_async(user_message: str, conversation: list):
                 full_reply += content
                 yield content
         
+        # Append the full reply to the conversation history for context
         conversation.append({"role": "assistant", "content": full_reply})
+
     except Exception as e:
         print(f"❌ Error during async Mistral chat: {e}")

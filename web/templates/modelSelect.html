@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vaani</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="theme-switcher">
+        <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.106a.75.75 0 010 1.06l-1.591 1.59a.75.75 0 01-1.06-1.061l1.59-1.591a.75.75 0 011.06 0zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.894 17.894a.75.75 0 01-1.06 0l-1.59-1.591a.75.75 0 111.06-1.06l1.59 1.591a.75.75 0 010 1.06zM12 21a.75.75 0 01-.75-.75v-2.25a.75.75 0 011.5 0V20.25a.75.75 0 01-.75.75zM5.106 17.894a.75.75 0 010-1.06l1.591-1.59a.75.75 0 011.06 1.061l-1.59 1.591a.75.75 0 01-1.06 0zM3 12a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5H3.75A.75.75 0 013 12zM6.106 5.106a.75.75 0 011.06 0l1.59 1.591a.75.75 0 01-1.06 1.06l-1.59-1.591a.75.75 0 010-1.06z"></path></svg>
+        <label class="switch">
+            <input type="checkbox" id="theme-toggle">
+            <span class="slider"></span>
+        </label>
+        <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-3.152 1.413-5.973 3.718-7.942a.75.75 0 01.818.162z" clip-rule="evenodd"></path></svg>
+    </div>
+
+    <header class="main-header">
+        <div class="header-left">
+            <div class="logo">🌱</div>
+            <div id="status-indicator" class="status-indicator">
+                <img id="status-listening" src="{{ url_for('static', path='assets/press.gif') }}" alt="Listening..." class="status-gif">
+                <img id="status-processing" src="{{ url_for('static', path='assets/notes.gif') }}" alt="Processing..." class="status-gif">
+                <img id="status-speaking" src="{{ url_for('static', path='assets/speak.gif') }}" alt="Speaking..." class="status-gif">
+                <img id="status-muted" src="{{ url_for('static', path='assets/mute.gif') }}" alt="Muted" class="status-gif">
+            </div>
+        </div>
+        <div id="mode-indicator" class="mode-indicator"></div>
+        <button class="login-btn">Log in</button>
+    </header>
+
+    <main>
+        <div id="model-select-screen" class="screen active">
+            <h1 class="selection-title">Select Your AI Companion</h1>
+            <div class="split-container">
+                <div class="split-section left">
+                    <div class="model-card" id="taara-card">
+                        <img src="{{ url_for('static', path='assets/ai_images/taara.png') }}" alt="AI Model Taara" class="model-avatar">
+                        <div class="card-content">
+                            <div class="card-top">
+                                <h2>TAARA</h2>
+                                <p>Your witty, warm, and supportive best friend. Always ready for a deep chat or a playful joke.</p>
+                                <div class="ai-traits">
+                                    <h4>Key Traits:</h4>
+                                    <ul class="traits-list">
+                                        <li><span>💛</span> Empathy</li><li><span>🌱</span> Resilience</li>
+                                        <li><span>💎</span> Integrity</li><li><span>🧘</span> Patience</li>
+                                        <li><span>❤️</span> Compassion</li><li><span>🦁</span> Courage</li>
+                                        <li><span>🏵️</span> Optimism</li><li><span>💖</span> Self-love</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <button class="access-button" data-model="Taara">Access Taara</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="split-section right">
+                    <div class="model-card" id="veer-card">
+                        <img src="{{ url_for('static', path='assets/ai_images/veer.png') }}" alt="AI Model Veer" class="model-avatar">
+                        <div class="card-content">
+                            <div class="card-top">
+                                <h2>VEER</h2>
+                                <p>Your calm, focused, and strategic thinking partner. Ready to help you solve problems and plan ahead.</p>
+                                <div class="ai-traits">
+                                    <h4>Key Traits:</h4>
+                                    <ul class="traits-list">
+                                        <li><span>🧭</span> Integrity</li><li><span>🧠</span> Emo. Intelligence</li>
+                                        <li><span>💪</span> Strength</li><li><span>🛡️</span> Responsibility</li>
+                                        <li><span>😌</span> Humility</li><li><span>🔥</span> Confidence</li>
+                                        <li><span>👂</span> Active Listener</li><li><span>💡</span> Purpose-driven</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <button class="access-button" data-model="Veer">Access Veer</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading-screen" class="screen"><div class="status-box"><p id="loading-text">Connecting...</p></div></div>
+        <div id="call-screen" class="screen"></div>
+        <div id="not-available-screen" class="screen"></div>
+    </main>
+
+    <audio id="caller-tune" src="{{ url_for('static', path='assets/callertune.mp3') }}" loop preload="auto"></audio>
+    <audio id="connection-chime" src="{{ url_for('static', path='assets/chime.wav') }}" preload="auto"></audio>
+    <audio id="typing-sound" src="{{ url_for('static', path='assets/chat.mp3') }}" preload="auto"></audio>
+    <script src="{{ url_for('static', path='script.js') }}"></script>
+</body>
+</html>
